@@ -8,35 +8,79 @@
   </head>
   <body>
     <main class="app-shell">
-      <section class="topbar">
+      <header class="topbar">
         <div>
-          <p class="eyebrow">Local Day Planner</p>
+          <p class="eyebrow">Local Planner</p>
           <h1>Day Pocket</h1>
         </div>
-        <div class="counter" id="counter">0 left</div>
+        <div class="counter" id="counter">0 items</div>
+      </header>
+
+      <section class="workspace">
+        <section class="list-pane" aria-label="Items">
+          <form class="composer" id="item-form">
+            <input id="item-title-input" type="text" placeholder="새 일감 또는 프로젝트" autocomplete="off" />
+            <button type="submit">Add</button>
+          </form>
+
+          <ul class="item-list" id="item-list"></ul>
+        </section>
+
+        <section class="detail-pane" id="detail-pane" aria-label="Item detail">
+          <div class="empty-state" id="empty-state">
+            <h2>선택된 항목이 없습니다</h2>
+            <p>왼쪽에서 일감이나 프로젝트를 선택하면 상세 내용을 편집할 수 있습니다.</p>
+          </div>
+
+          <article class="detail-card hidden" id="detail-card">
+            <div class="detail-header">
+              <input id="detail-title" class="detail-title-input" type="text" aria-label="Title" />
+              <button id="delete-item-button" class="danger-button" type="button">Delete</button>
+            </div>
+
+            <label class="field">
+              <span>내용</span>
+              <textarea id="detail-content" rows="8" placeholder="메모, 진행 상황, 참고 내용을 적어두세요"></textarea>
+            </label>
+
+            <section class="subtasks">
+              <div class="section-title">
+                <h2>하위 일감</h2>
+                <span id="subtask-count">0 tasks</span>
+              </div>
+
+              <form class="subtask-form" id="subtask-form">
+                <input id="subtask-input" type="text" placeholder="하위 일감 추가" autocomplete="off" />
+                <button type="submit">Add</button>
+              </form>
+
+              <ul class="subtask-list" id="subtask-list"></ul>
+            </section>
+          </article>
+        </section>
       </section>
-
-      <form class="composer" id="todo-form">
-        <input id="todo-input" type="text" placeholder="새 할 일을 입력하세요" autocomplete="off" />
-        <button type="submit">Add</button>
-      </form>
-
-      <section class="filters" aria-label="Todo filters">
-        <button class="active" type="button" data-filter="all">All</button>
-        <button type="button" data-filter="active">Active</button>
-        <button type="button" data-filter="done">Done</button>
-      </section>
-
-      <ul class="todo-list" id="todo-list"></ul>
     </main>
 
-    <template id="todo-template">
-      <li class="todo-item">
+    <template id="item-template">
+      <li class="item-card">
+        <div class="item-main">
+          <button type="button" class="expand-button" aria-label="Toggle item">▸</button>
+          <button type="button" class="item-select">
+            <span class="item-title"></span>
+            <span class="item-meta"></span>
+          </button>
+        </div>
+        <div class="item-preview"></div>
+      </li>
+    </template>
+
+    <template id="subtask-template">
+      <li class="subtask-item">
         <label>
           <input type="checkbox" />
           <span></span>
         </label>
-        <button type="button" class="delete-button" aria-label="Delete todo">Delete</button>
+        <button type="button" class="icon-button" aria-label="Delete subtask">×</button>
       </li>
     </template>
 
