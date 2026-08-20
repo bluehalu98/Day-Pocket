@@ -15,6 +15,10 @@
           <h1>Day Pocket</h1>
         </div>
         <div class="topbar-actions">
+          <button id="category-manager-button" class="ghost-button" type="button">
+            <i data-lucide="tags" aria-hidden="true"></i>
+            <span>분류</span>
+          </button>
           <button id="back-button" class="ghost-button hidden" type="button">
             <i data-lucide="arrow-left" aria-hidden="true"></i>
             <span>Back</span>
@@ -27,8 +31,16 @@
         <section class="list-view" id="list-view" aria-label="Items">
           <form class="composer" id="item-form">
             <input id="item-title-input" type="text" placeholder="새 일감 또는 프로젝트" autocomplete="off" />
+            <select id="item-category-select" aria-label="Category"></select>
             <button type="submit">Add</button>
           </form>
+
+          <div class="filterbar">
+            <label>
+              <span>필터</span>
+              <select id="category-filter" aria-label="Filter by category"></select>
+            </label>
+          </div>
 
           <ul class="item-list" id="item-list"></ul>
         </section>
@@ -46,6 +58,11 @@
                 <i data-lucide="trash-2" aria-hidden="true"></i>
               </button>
             </div>
+
+            <label class="field compact-field">
+              <span>분류</span>
+              <select id="detail-category-select" aria-label="Detail category"></select>
+            </label>
 
             <section class="field">
               <span>내용</span>
@@ -112,6 +129,27 @@
         </button>
       </li>
     </template>
+
+    <div class="overlay hidden" id="category-overlay" role="dialog" aria-modal="true" aria-labelledby="category-overlay-title">
+      <section class="overlay-panel">
+        <div class="overlay-header">
+          <div>
+            <p class="eyebrow">Categories</p>
+            <h2 id="category-overlay-title">분류 관리</h2>
+          </div>
+          <button id="category-overlay-close" class="icon-button" type="button" aria-label="Close category manager">
+            <i data-lucide="x" aria-hidden="true"></i>
+          </button>
+        </div>
+
+        <form class="category-form" id="category-form">
+          <input id="category-name-input" type="text" placeholder="새 분류 이름" autocomplete="off" />
+          <button type="submit">Add</button>
+        </form>
+
+        <ul class="category-list" id="category-list"></ul>
+      </section>
+    </div>
 
     <script src="../node_modules/lucide/dist/umd/lucide.js"></script>
     <script src="./renderer.js"></script>

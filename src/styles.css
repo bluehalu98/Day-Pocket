@@ -23,6 +23,7 @@ body {
 
 button,
 input,
+select,
 textarea,
 .editor {
   font: inherit;
@@ -113,13 +114,17 @@ h1 {
 
 .composer {
   display: grid;
-  grid-template-columns: 1fr auto;
+  grid-template-columns: 1fr minmax(170px, 220px) auto;
   gap: 10px;
   margin-bottom: 12px;
 }
 
 .composer input,
+.composer select,
+.filterbar select,
 .subtask-form input,
+.compact-field select,
+.category-form input,
 .detail-title-input,
 .editor-shell {
   width: 100%;
@@ -132,7 +137,11 @@ h1 {
 }
 
 .composer input,
-.subtask-form input {
+.composer select,
+.filterbar select,
+.subtask-form input,
+.compact-field select,
+.category-form input {
   padding: 11px 13px;
 }
 
@@ -142,7 +151,11 @@ h1 {
 }
 
 .composer input:focus,
+.composer select:focus,
+.filterbar select:focus,
 .subtask-form input:focus,
+.compact-field select:focus,
+.category-form input:focus,
 .detail-title-input:focus,
 .editor-shell:focus-within {
   border-color: #60a5fa;
@@ -150,7 +163,8 @@ h1 {
 }
 
 .composer button,
-.subtask-form button {
+.subtask-form button,
+.category-form button {
   min-width: 78px;
   border: 0;
   border-radius: 8px;
@@ -161,8 +175,28 @@ h1 {
 }
 
 .composer button:hover,
-.subtask-form button:hover {
+.subtask-form button:hover,
+.category-form button:hover {
   background: #f3f4f6;
+}
+
+.filterbar {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 14px;
+}
+
+.filterbar label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #9aa6b8;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.filterbar select {
+  min-width: 180px;
 }
 
 .item-list,
@@ -341,6 +375,10 @@ h1 {
   gap: 8px;
 }
 
+.compact-field {
+  max-width: 280px;
+}
+
 .field span,
 .section-title h2 {
   color: #cbd5e1;
@@ -506,6 +544,80 @@ h1 {
   display: none;
 }
 
+.overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 10;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background: rgba(4, 7, 12, 0.68);
+  backdrop-filter: blur(8px);
+}
+
+.overlay.hidden {
+  display: none;
+}
+
+.overlay-panel {
+  width: min(520px, 100%);
+  border: 1px solid #2b3340;
+  border-radius: 8px;
+  padding: 20px;
+  background: #171b23;
+  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.46);
+}
+
+.overlay-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.overlay-header h2 {
+  color: #f3f4f6;
+  font-size: 21px;
+}
+
+.category-form {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+
+.category-list {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.category-row {
+  display: grid;
+  grid-template-columns: 1fr 34px;
+  align-items: center;
+  gap: 10px;
+  border: 1px solid #2f3746;
+  border-radius: 8px;
+  padding: 10px;
+  background: #141820;
+}
+
+.category-row span {
+  overflow-wrap: anywhere;
+  color: #e5e7eb;
+  font-weight: 800;
+}
+
+.category-row button:disabled {
+  cursor: not-allowed;
+  opacity: 0.36;
+}
+
 @media (max-width: 820px) {
   .app-shell {
     width: min(100vw - 24px, 1320px);
@@ -513,6 +625,8 @@ h1 {
   }
 
   .topbar,
+  .composer,
+  .category-form,
   .detail-header {
     grid-template-columns: 1fr;
   }
@@ -537,6 +651,16 @@ h1 {
 
   .item-list {
     grid-template-columns: 1fr;
+  }
+
+  .filterbar {
+    justify-content: stretch;
+  }
+
+  .filterbar label {
+    align-items: stretch;
+    flex-direction: column;
+    width: 100%;
   }
 
   .workspace,

@@ -1,6 +1,6 @@
 const { contextBridge, ipcRenderer } = require("electron");
 
 contextBridge.exposeInMainWorld("dayPocketStore", {
-  load: () => ipcRenderer.invoke("items:load"),
-  save: (items) => ipcRenderer.invoke("items:save", items)
+  load: () => ipcRenderer.invoke("state:load"),
+  save: (state) => ipcRenderer.invoke("state:save", state)
 });
