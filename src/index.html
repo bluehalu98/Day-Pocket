@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Day Pocket</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <main class="app-shell">
+      <section class="topbar">
+        <div>
+          <p class="eyebrow">Local Day Planner</p>
+          <h1>Day Pocket</h1>
+        </div>
+        <div class="counter" id="counter">0 left</div>
+      </section>
+
+      <form class="composer" id="todo-form">
+        <input id="todo-input" type="text" placeholder="새 할 일을 입력하세요" autocomplete="off" />
+        <button type="submit">Add</button>
+      </form>
+
+      <section class="filters" aria-label="Todo filters">
+        <button class="active" type="button" data-filter="all">All</button>
+        <button type="button" data-filter="active">Active</button>
+        <button type="button" data-filter="done">Done</button>
+      </section>
+
+      <ul class="todo-list" id="todo-list"></ul>
+    </main>
+
+    <template id="todo-template">
+      <li class="todo-item">
+        <label>
+          <input type="checkbox" />
+          <span></span>
+        </label>
+        <button type="button" class="delete-button" aria-label="Delete todo">Delete</button>
+      </li>
+    </template>
+
+    <script src="./renderer.js"></script>
+  </body>
+</html>

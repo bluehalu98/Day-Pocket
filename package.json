@@ -1,0 +1,13 @@
+{
+  "name": "day-pocket",
+  "version": "0.1.0",
+  "description": "A local-first schedule, memo, and todo companion.",
+  "main": "src/main.js",
+  "private": true,
+  "scripts": {
+    "start": "electron ."
+  },
+  "devDependencies": {
+    "electron": "^43.4.1"
+  }
+}
