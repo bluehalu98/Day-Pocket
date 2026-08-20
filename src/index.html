@@ -4,6 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Day Pocket</title>
+    <link rel="stylesheet" href="../node_modules/pretendard/dist/web/variable/pretendardvariable.css" />
     <link rel="stylesheet" href="./styles.css" />
   </head>
   <body>
@@ -35,19 +36,22 @@
           <article class="detail-card hidden" id="detail-card">
             <div class="detail-header">
               <input id="detail-title" class="detail-title-input" type="text" aria-label="Title" />
-              <button id="delete-item-button" class="danger-button" type="button">Delete</button>
+              <button id="delete-item-button" class="danger-button icon-only-button" type="button" aria-label="Delete item">
+                <i data-lucide="trash-2" aria-hidden="true"></i>
+              </button>
             </div>
 
             <section class="field">
               <span>내용</span>
               <div class="editor-shell">
                 <div class="editor-toolbar" aria-label="Editor toolbar">
-                  <button type="button" data-command="bold" title="Bold">B</button>
-                  <button type="button" data-command="italic" title="Italic">I</button>
-                  <button type="button" data-command="underline" title="Underline">U</button>
-                  <button type="button" data-command="insertUnorderedList" title="Bullet list">• List</button>
-                  <button type="button" data-command="formatBlock" data-value="<blockquote>" title="Quote">Quote</button>
-                  <button type="button" data-command="removeFormat" title="Clear format">Clear</button>
+                  <button type="button" data-command="bold" title="Bold"><i data-lucide="bold" aria-hidden="true"></i></button>
+                  <button type="button" data-command="italic" title="Italic"><i data-lucide="italic" aria-hidden="true"></i></button>
+                  <button type="button" data-command="underline" title="Underline"><i data-lucide="underline" aria-hidden="true"></i></button>
+                  <button type="button" data-command="insertUnorderedList" title="Bullet list"><i data-lucide="list" aria-hidden="true"></i></button>
+                  <button type="button" data-command="insertOrderedList" title="Numbered list"><i data-lucide="list-ordered" aria-hidden="true"></i></button>
+                  <button type="button" data-command="formatBlock" data-value="<blockquote>" title="Quote"><i data-lucide="quote" aria-hidden="true"></i></button>
+                  <button type="button" data-command="removeFormat" title="Clear format"><i data-lucide="eraser" aria-hidden="true"></i></button>
                 </div>
                 <div
                   id="detail-content"
@@ -97,10 +101,13 @@
           <input type="checkbox" />
           <span></span>
         </label>
-        <button type="button" class="icon-button" aria-label="Delete subtask">×</button>
+        <button type="button" class="icon-button" aria-label="Delete subtask">
+          <i data-lucide="x" aria-hidden="true"></i>
+        </button>
       </li>
     </template>
 
+    <script src="../node_modules/lucide/dist/umd/lucide.js"></script>
     <script src="./renderer.js"></script>
   </body>
 </html>

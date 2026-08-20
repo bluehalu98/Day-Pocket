@@ -19,6 +19,7 @@ const subtaskCount = document.querySelector("#subtask-count");
 let items = [];
 let selectedItemId = null;
 const expandedItemIds = new Set();
+let saveTimer = null;
 
 function createItem(title) {
   const now = new Date().toISOString();
@@ -65,6 +66,12 @@ function stripHtml(html) {
   return element.textContent ?? "";
 }
 
+function syncIcons() {
+  if (window.lucide) {
+    window.lucide.createIcons();
+  }
+}
+
 async function persist() {
   await window.dayPocketStore.save(items);
 }
@@ -75,6 +82,71 @@ async function updateSelectedItem(patch) {
   );
   await persist();
   render();
+}
+
+async function updateSelectedContent() {
+  items = items.map((item) =>
+    item.id === selectedItemId
+      ? { ...item, content: detailContent.innerHTML, updatedAt: new Date().toISOString() }
+      : item
+  );
+  await persist();
+  renderList();
+}
+
+function scheduleContentSave() {
+  window.clearTimeout(saveTimer);
+  saveTimer = window.setTimeout(updateSelectedContent, 160);
+}
+
+function blockTextBeforeCursor() {
+  const selection = window.getSelection();
+  if (!selection || selection.rangeCount === 0) return "";
+
+  const range = selection.getRangeAt(0);
+  const block = range.startContainer.parentElement?.closest("li, div, p, blockquote");
+  if (!block || !detailContent.contains(block)) return "";
+
+  const beforeRange = document.createRange();
+  beforeRange.selectNodeContents(block);
+  beforeRange.setEnd(range.startContainer, range.startOffset);
+  return beforeRange.toString();
+}
+
+function replaceShortcutWithList(command, shortcutText) {
+  const selection = window.getSelection();
+  if (!selection || selection.rangeCount === 0) return;
+
+  const range = selection.getRangeAt(0);
+  if (range.startOffset < shortcutText.length) return;
+
+  range.setStart(range.startContainer, range.startOffset - shortcutText.length);
+  range.deleteContents();
+  document.execCommand(command);
+  scheduleContentSave();
+}
+
+function handleEditorShortcut(event) {
+  if (event.key === "Tab") {
+    event.preventDefault();
+    document.execCommand(event.shiftKey ? "outdent" : "indent");
+    scheduleContentSave();
+    return;
+  }
+
+  if (event.key !== " ") return;
+
+  const text = blockTextBeforeCursor();
+  if (text === "-") {
+    event.preventDefault();
+    replaceShortcutWithList("insertUnorderedList", "-");
+    return;
+  }
+
+  if (/^\d+\.$/.test(text)) {
+    event.preventDefault();
+    replaceShortcutWithList("insertOrderedList", text);
+  }
 }
 
 function renderList() {
@@ -180,6 +252,7 @@ function renderDetail() {
 function render() {
   renderList();
   renderDetail();
+  syncIcons();
 }
 
 itemForm.addEventListener("submit", async (event) => {
@@ -201,15 +274,17 @@ detailTitle.addEventListener("change", async () => {
   await updateSelectedItem({ title });
 });
 
-detailContent.addEventListener("input", async () => {
-  await updateSelectedItem({ content: detailContent.innerHTML });
+detailContent.addEventListener("keydown", handleEditorShortcut);
+
+detailContent.addEventListener("input", () => {
+  scheduleContentSave();
 });
 
 for (const button of editorButtons) {
   button.addEventListener("click", () => {
     detailContent.focus();
     document.execCommand(button.dataset.command, false, button.dataset.value ?? null);
-    detailContent.dispatchEvent(new Event("input"));
+    scheduleContentSave();
   });
 }
 
