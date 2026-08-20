@@ -1,9 +1,10 @@
 :root {
-  color-scheme: light;
+  color-scheme: dark;
   font-family:
     Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-  background: #eef1f4;
-  color: #1f2933;
+  font-size: 15px;
+  background: #111318;
+  color: #e5e7eb;
 }
 
 * {
@@ -14,9 +15,9 @@ body {
   margin: 0;
   min-height: 100vh;
   background:
-    linear-gradient(135deg, rgba(37, 99, 235, 0.12), transparent 34%),
-    linear-gradient(315deg, rgba(22, 163, 74, 0.12), transparent 36%),
-    #eef1f4;
+    linear-gradient(135deg, rgba(59, 130, 246, 0.16), transparent 34%),
+    linear-gradient(315deg, rgba(20, 184, 166, 0.12), transparent 36%),
+    #111318;
 }
 
 button,
@@ -33,7 +34,7 @@ button {
 .app-shell {
   width: min(1180px, calc(100vw - 32px));
   margin: 0 auto;
-  padding: 36px 0;
+  padding: 32px 0;
 }
 
 .topbar {
@@ -46,8 +47,8 @@ button {
 
 .eyebrow {
   margin: 0 0 6px;
-  color: #2563eb;
-  font-size: 13px;
+  color: #60a5fa;
+  font-size: 12px;
   font-weight: 800;
   text-transform: uppercase;
 }
@@ -59,17 +60,17 @@ p {
 }
 
 h1 {
-  font-size: 40px;
+  font-size: 32px;
   line-height: 1.05;
 }
 
 .counter {
   min-width: 98px;
-  border: 1px solid #d2d8e2;
+  border: 1px solid #2f3746;
   border-radius: 8px;
-  padding: 10px 14px;
-  background: rgba(255, 255, 255, 0.78);
-  color: #475569;
+  padding: 9px 13px;
+  background: rgba(27, 32, 42, 0.86);
+  color: #a8b3c5;
   text-align: center;
   font-weight: 800;
 }
@@ -99,24 +100,29 @@ h1 {
 .editor-shell {
   width: 100%;
   min-width: 0;
-  border: 1px solid #cbd5e1;
+  border: 1px solid #2f3746;
   border-radius: 8px;
-  background: #ffffff;
-  color: #1f2933;
+  background: #171b23;
+  color: #e5e7eb;
   outline: none;
 }
 
 .composer input,
 .subtask-form input {
-  padding: 12px 14px;
+  padding: 11px 13px;
+}
+
+.composer input::placeholder,
+.subtask-form input::placeholder {
+  color: #737f92;
 }
 
 .composer input:focus,
 .subtask-form input:focus,
 .detail-title-input:focus,
 .editor-shell:focus-within {
-  border-color: #2563eb;
-  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.14);
+  border-color: #60a5fa;
+  box-shadow: 0 0 0 3px rgba(96, 165, 250, 0.16);
 }
 
 .composer button,
@@ -124,9 +130,15 @@ h1 {
   min-width: 78px;
   border: 0;
   border-radius: 8px;
-  background: #1f2937;
-  color: #ffffff;
-  font-weight: 800;
+  background: #e5e7eb;
+  color: #111318;
+  font-size: 14px;
+  font-weight: 850;
+}
+
+.composer button:hover,
+.subtask-form button:hover {
+  background: #f3f4f6;
 }
 
 .item-list,
@@ -145,10 +157,10 @@ h1 {
 .item-card,
 .detail-card,
 .empty-state {
-  border: 1px solid #d8dee8;
+  border: 1px solid #2b3340;
   border-radius: 8px;
-  background: rgba(255, 255, 255, 0.84);
-  box-shadow: 0 16px 34px rgba(31, 41, 55, 0.08);
+  background: rgba(23, 27, 35, 0.9);
+  box-shadow: 0 16px 34px rgba(0, 0, 0, 0.28);
 }
 
 .item-card {
@@ -156,10 +168,10 @@ h1 {
 }
 
 .item-card.selected {
-  border-color: #2563eb;
+  border-color: #60a5fa;
   box-shadow:
-    0 0 0 3px rgba(37, 99, 235, 0.12),
-    0 16px 34px rgba(31, 41, 55, 0.08);
+    0 0 0 3px rgba(96, 165, 250, 0.16),
+    0 16px 34px rgba(0, 0, 0, 0.28);
 }
 
 .item-main {
@@ -180,9 +192,14 @@ h1 {
 .expand-button {
   width: 34px;
   height: 34px;
-  background: #edf2f7;
-  color: #475569;
+  background: #252c38;
+  color: #a8b3c5;
   font-weight: 900;
+}
+
+.expand-button:hover {
+  background: #303949;
+  color: #e5e7eb;
 }
 
 .item-select {
@@ -196,21 +213,21 @@ h1 {
 
 .item-title {
   overflow-wrap: anywhere;
-  color: #111827;
+  color: #f3f4f6;
   font-weight: 850;
 }
 
 .item-meta {
-  color: #64748b;
-  font-size: 13px;
+  color: #9aa6b8;
+  font-size: 12px;
   font-weight: 700;
 }
 
 .item-preview {
   display: none;
   padding: 8px 10px 10px 38px;
-  color: #475569;
-  font-size: 14px;
+  color: #b6c0ce;
+  font-size: 13px;
   line-height: 1.5;
 }
 
@@ -222,7 +239,7 @@ h1 {
 .nested-subtasks {
   display: grid;
   gap: 6px;
-  color: #334155;
+  color: #cbd5e1;
 }
 
 .nested-subtasks li {
@@ -235,7 +252,7 @@ h1 {
   position: absolute;
   left: 0;
   content: "-";
-  color: #2563eb;
+  color: #5eead4;
 }
 
 .nested-subtasks li.done {
@@ -253,12 +270,12 @@ h1 {
   display: grid;
   align-content: center;
   gap: 8px;
-  color: #64748b;
+  color: #9aa6b8;
 }
 
 .empty-state h2 {
-  color: #1f2933;
-  font-size: 24px;
+  color: #f3f4f6;
+  font-size: 21px;
 }
 
 .detail-card {
@@ -274,17 +291,21 @@ h1 {
 }
 
 .detail-title-input {
-  padding: 12px 14px;
-  font-size: 24px;
+  padding: 11px 13px;
+  font-size: 21px;
   font-weight: 850;
 }
 
 .danger-button {
   min-width: 84px;
-  height: 46px;
-  background: #fee2e2;
-  color: #b42318;
+  height: 43px;
+  background: #3b1f24;
+  color: #fca5a5;
   font-weight: 850;
+}
+
+.danger-button:hover {
+  background: #4a252c;
 }
 
 .field {
@@ -294,8 +315,8 @@ h1 {
 
 .field span,
 .section-title h2 {
-  color: #334155;
-  font-size: 14px;
+  color: #cbd5e1;
+  font-size: 13px;
   font-weight: 850;
 }
 
@@ -307,30 +328,31 @@ h1 {
   display: flex;
   flex-wrap: wrap;
   gap: 6px;
-  border-bottom: 1px solid #e2e8f0;
+  border-bottom: 1px solid #2f3746;
   padding: 8px;
-  background: #f8fafc;
+  background: #141820;
 }
 
 .editor-toolbar button {
   min-width: 34px;
-  height: 32px;
-  border: 1px solid #d8dee8;
+  height: 30px;
+  border: 1px solid #303949;
   border-radius: 8px;
-  background: #ffffff;
-  color: #334155;
-  font-size: 13px;
+  background: #202734;
+  color: #cbd5e1;
+  font-size: 12px;
   font-weight: 850;
 }
 
 .editor-toolbar button:hover {
-  border-color: #93a4b8;
-  background: #edf2f7;
+  border-color: #60a5fa;
+  background: #283141;
 }
 
 .editor {
   min-height: 260px;
-  padding: 14px;
+  padding: 13px;
+  font-size: 14px;
   line-height: 1.55;
   outline: none;
 }
@@ -347,10 +369,10 @@ h1 {
 
 .editor blockquote {
   margin: 10px 0;
-  border-left: 3px solid #2563eb;
+  border-left: 3px solid #5eead4;
   padding: 8px 12px;
-  background: #f8fafc;
-  color: #475569;
+  background: #141820;
+  color: #cbd5e1;
 }
 
 .subtasks {
@@ -366,8 +388,8 @@ h1 {
 }
 
 .section-title span {
-  color: #64748b;
-  font-size: 13px;
+  color: #9aa6b8;
+  font-size: 12px;
   font-weight: 800;
 }
 
@@ -387,10 +409,10 @@ h1 {
   grid-template-columns: 1fr 34px;
   align-items: center;
   gap: 10px;
-  border: 1px solid #e2e8f0;
+  border: 1px solid #2f3746;
   border-radius: 8px;
   padding: 10px;
-  background: #ffffff;
+  background: #141820;
 }
 
 .subtask-item label {
@@ -403,7 +425,7 @@ h1 {
 .subtask-item input {
   width: 18px;
   height: 18px;
-  accent-color: #2563eb;
+  accent-color: #60a5fa;
 }
 
 .subtask-item span {
@@ -418,10 +440,15 @@ h1 {
 .icon-button {
   width: 34px;
   height: 34px;
-  background: #f1f5f9;
-  color: #64748b;
-  font-size: 20px;
+  background: #252c38;
+  color: #9aa6b8;
+  font-size: 18px;
   font-weight: 800;
+}
+
+.icon-button:hover {
+  background: #303949;
+  color: #fca5a5;
 }
 
 .hidden {
@@ -446,7 +473,7 @@ h1 {
   }
 
   h1 {
-    font-size: 34px;
+    font-size: 30px;
   }
 
   .counter {
