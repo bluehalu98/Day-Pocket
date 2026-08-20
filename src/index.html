@@ -29,17 +29,21 @@
 
       <section class="workspace">
         <section class="list-view" id="list-view" aria-label="Items">
-          <form class="composer" id="item-form">
-            <input id="item-title-input" type="text" placeholder="새 일감 또는 프로젝트" autocomplete="off" />
-            <select id="item-category-select" aria-label="Category"></select>
-            <button type="submit">Add</button>
-          </form>
-
-          <div class="filterbar">
-            <label>
-              <span>필터</span>
+          <div class="list-toolbar">
+            <div class="filterbar">
+              <i data-lucide="filter" aria-hidden="true"></i>
               <select id="category-filter" aria-label="Filter by category"></select>
-            </label>
+            </div>
+
+            <div class="search-field">
+              <i data-lucide="search" aria-hidden="true"></i>
+              <input id="item-search-input" type="search" placeholder="일감 검색" autocomplete="off" />
+            </div>
+
+            <button id="new-item-button" class="primary-button" type="button">
+              <i data-lucide="plus" aria-hidden="true"></i>
+              <span>New</span>
+            </button>
           </div>
 
           <ul class="item-list" id="item-list"></ul>
@@ -148,6 +152,32 @@
         </form>
 
         <ul class="category-list" id="category-list"></ul>
+      </section>
+    </div>
+
+    <div class="overlay hidden" id="item-overlay" role="dialog" aria-modal="true" aria-labelledby="item-overlay-title">
+      <section class="overlay-panel">
+        <div class="overlay-header">
+          <div>
+            <p class="eyebrow">New Item</p>
+            <h2 id="item-overlay-title">일감 추가</h2>
+          </div>
+          <button id="item-overlay-close" class="icon-button" type="button" aria-label="Close item form">
+            <i data-lucide="x" aria-hidden="true"></i>
+          </button>
+        </div>
+
+        <form class="item-create-form" id="item-form">
+          <label class="field">
+            <span>제목</span>
+            <input id="item-title-input" type="text" placeholder="새 일감 또는 프로젝트" autocomplete="off" />
+          </label>
+          <label class="field">
+            <span>분류</span>
+            <select id="item-category-select" aria-label="Category"></select>
+          </label>
+          <button type="submit">Add</button>
+        </form>
       </section>
     </div>
 

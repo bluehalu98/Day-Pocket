@@ -1,5 +1,6 @@
 const itemForm = document.querySelector("#item-form");
 const itemTitleInput = document.querySelector("#item-title-input");
+const itemSearchInput = document.querySelector("#item-search-input");
 const itemList = document.querySelector("#item-list");
 const counter = document.querySelector("#counter");
 const itemCategorySelect = document.querySelector("#item-category-select");
@@ -10,6 +11,9 @@ const subtaskTemplate = document.querySelector("#subtask-template");
 const listView = document.querySelector("#list-view");
 const detailView = document.querySelector("#detail-view");
 const backButton = document.querySelector("#back-button");
+const newItemButton = document.querySelector("#new-item-button");
+const itemOverlay = document.querySelector("#item-overlay");
+const itemOverlayClose = document.querySelector("#item-overlay-close");
 const categoryManagerButton = document.querySelector("#category-manager-button");
 const categoryOverlay = document.querySelector("#category-overlay");
 const categoryOverlayClose = document.querySelector("#category-overlay-close");
@@ -33,6 +37,7 @@ let categories = [{ id: "uncategorized", name: "미분류", locked: true }];
 let selectedItemId = null;
 let currentView = "list";
 let activeCategoryFilter = "all";
+let searchQuery = "";
 const expandedItemIds = new Set();
 let saveTimer = null;
 
@@ -68,8 +73,14 @@ function categoryName(categoryId) {
 }
 
 function visibleItems() {
-  if (activeCategoryFilter === "all") return items;
-  return items.filter((item) => (item.categoryId ?? "uncategorized") === activeCategoryFilter);
+  const query = searchQuery.trim().toLowerCase();
+
+  return items.filter((item) => {
+    const categoryMatches =
+      activeCategoryFilter === "all" || (item.categoryId ?? "uncategorized") === activeCategoryFilter;
+    const searchTarget = `${item.title} ${stripHtml(item.content)}`.toLowerCase();
+    return categoryMatches && (!query || searchTarget.includes(query));
+  });
 }
 
 function itemProgress(item) {
@@ -134,6 +145,18 @@ function showDetailView(itemId) {
   currentView = "detail";
   selectedItemId = itemId;
   render();
+}
+
+function openItemOverlay() {
+  itemOverlay.classList.remove("hidden");
+  itemTitleInput.focus();
+  syncIcons();
+}
+
+function closeItemOverlay() {
+  itemOverlay.classList.add("hidden");
+  itemTitleInput.value = "";
+  itemCategorySelect.value = "uncategorized";
 }
 
 function option(category, selectedId) {
@@ -366,9 +389,29 @@ itemForm.addEventListener("submit", async (event) => {
   const item = createItem(title);
   items = [item, ...items];
   expandedItemIds.add(item.id);
-  itemTitleInput.value = "";
+  closeItemOverlay();
   await persist();
   showDetailView(item.id);
+});
+
+newItemButton.addEventListener("click", () => {
+  openItemOverlay();
+});
+
+itemOverlayClose.addEventListener("click", () => {
+  closeItemOverlay();
+});
+
+itemOverlay.addEventListener("click", (event) => {
+  if (event.target === itemOverlay) {
+    closeItemOverlay();
+  }
+});
+
+itemSearchInput.addEventListener("input", () => {
+  searchQuery = itemSearchInput.value;
+  renderList();
+  syncIcons();
 });
 
 backButton.addEventListener("click", () => {
