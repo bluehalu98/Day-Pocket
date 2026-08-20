@@ -5,6 +5,9 @@ const counter = document.querySelector("#counter");
 const itemTemplate = document.querySelector("#item-template");
 const subtaskTemplate = document.querySelector("#subtask-template");
 
+const listView = document.querySelector("#list-view");
+const detailView = document.querySelector("#detail-view");
+const backButton = document.querySelector("#back-button");
 const emptyState = document.querySelector("#empty-state");
 const detailCard = document.querySelector("#detail-card");
 const detailTitle = document.querySelector("#detail-title");
@@ -18,6 +21,7 @@ const subtaskCount = document.querySelector("#subtask-count");
 
 let items = [];
 let selectedItemId = null;
+let currentView = "list";
 const expandedItemIds = new Set();
 let saveTimer = null;
 
@@ -97,6 +101,18 @@ async function updateSelectedContent() {
 function scheduleContentSave() {
   window.clearTimeout(saveTimer);
   saveTimer = window.setTimeout(updateSelectedContent, 160);
+}
+
+function showListView() {
+  currentView = "list";
+  selectedItemId = null;
+  render();
+}
+
+function showDetailView(itemId) {
+  currentView = "detail";
+  selectedItemId = itemId;
+  render();
 }
 
 function blockTextBeforeCursor() {
@@ -197,8 +213,7 @@ function renderList() {
     });
 
     selectButton.addEventListener("click", () => {
-      selectedItemId = item.id;
-      render();
+      showDetailView(item.id);
     });
 
     itemList.append(card);
@@ -250,6 +265,9 @@ function renderDetail() {
 }
 
 function render() {
+  listView.classList.toggle("hidden", currentView !== "list");
+  detailView.classList.toggle("hidden", currentView !== "detail");
+  backButton.classList.toggle("hidden", currentView !== "detail");
   renderList();
   renderDetail();
   syncIcons();
@@ -262,11 +280,14 @@ itemForm.addEventListener("submit", async (event) => {
 
   const item = createItem(title);
   items = [item, ...items];
-  selectedItemId = item.id;
   expandedItemIds.add(item.id);
   itemTitleInput.value = "";
   await persist();
-  render();
+  showDetailView(item.id);
+});
+
+backButton.addEventListener("click", () => {
+  showListView();
 });
 
 detailTitle.addEventListener("change", async () => {
@@ -303,13 +324,14 @@ deleteItemButton.addEventListener("click", async () => {
 
   items = items.filter((item) => item.id !== selectedItemId);
   expandedItemIds.delete(selectedItemId);
-  selectedItemId = items[0]?.id ?? null;
+  selectedItemId = null;
   await persist();
-  render();
+  showListView();
 });
 
 window.dayPocketStore.load().then((loadedItems) => {
   items = loadedItems;
-  selectedItemId = items[0]?.id ?? null;
+  selectedItemId = null;
+  currentView = "list";
   render();
 });

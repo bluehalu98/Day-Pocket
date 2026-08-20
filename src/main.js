@@ -28,10 +28,10 @@ async function writeItems(items) {
 
 function createWindow() {
   const window = new BrowserWindow({
-    width: 1280,
-    height: 860,
-    minWidth: 960,
-    minHeight: 680,
+    width: 1440,
+    height: 960,
+    minWidth: 1100,
+    minHeight: 760,
     title: APP_NAME,
     webPreferences: {
       preload: path.join(__dirname, "preload.js"),
