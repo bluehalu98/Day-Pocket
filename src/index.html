@@ -38,10 +38,27 @@
               <button id="delete-item-button" class="danger-button" type="button">Delete</button>
             </div>
 
-            <label class="field">
+            <section class="field">
               <span>내용</span>
-              <textarea id="detail-content" rows="8" placeholder="메모, 진행 상황, 참고 내용을 적어두세요"></textarea>
-            </label>
+              <div class="editor-shell">
+                <div class="editor-toolbar" aria-label="Editor toolbar">
+                  <button type="button" data-command="bold" title="Bold">B</button>
+                  <button type="button" data-command="italic" title="Italic">I</button>
+                  <button type="button" data-command="underline" title="Underline">U</button>
+                  <button type="button" data-command="insertUnorderedList" title="Bullet list">• List</button>
+                  <button type="button" data-command="formatBlock" data-value="<blockquote>" title="Quote">Quote</button>
+                  <button type="button" data-command="removeFormat" title="Clear format">Clear</button>
+                </div>
+                <div
+                  id="detail-content"
+                  class="editor"
+                  contenteditable="true"
+                  role="textbox"
+                  aria-label="Content"
+                  data-placeholder="메모, 진행 상황, 참고 내용을 적어두세요"
+                ></div>
+              </div>
+            </section>
 
             <section class="subtasks">
               <div class="section-title">

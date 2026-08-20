@@ -21,7 +21,8 @@ body {
 
 button,
 input,
-textarea {
+textarea,
+.editor {
   font: inherit;
 }
 
@@ -95,7 +96,7 @@ h1 {
 .composer input,
 .subtask-form input,
 .detail-title-input,
-textarea {
+.editor-shell {
   width: 100%;
   min-width: 0;
   border: 1px solid #cbd5e1;
@@ -113,7 +114,7 @@ textarea {
 .composer input:focus,
 .subtask-form input:focus,
 .detail-title-input:focus,
-textarea:focus {
+.editor-shell:focus-within {
   border-color: #2563eb;
   box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.14);
 }
@@ -298,11 +299,58 @@ textarea:focus {
   font-weight: 850;
 }
 
-textarea {
-  min-height: 180px;
-  resize: vertical;
+.editor-shell {
+  overflow: hidden;
+}
+
+.editor-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  border-bottom: 1px solid #e2e8f0;
+  padding: 8px;
+  background: #f8fafc;
+}
+
+.editor-toolbar button {
+  min-width: 34px;
+  height: 32px;
+  border: 1px solid #d8dee8;
+  border-radius: 8px;
+  background: #ffffff;
+  color: #334155;
+  font-size: 13px;
+  font-weight: 850;
+}
+
+.editor-toolbar button:hover {
+  border-color: #93a4b8;
+  background: #edf2f7;
+}
+
+.editor {
+  min-height: 260px;
   padding: 14px;
   line-height: 1.55;
+  outline: none;
+}
+
+.editor:empty::before {
+  content: attr(data-placeholder);
+  color: #94a3b8;
+}
+
+.editor ul {
+  margin: 8px 0;
+  padding-left: 22px;
+}
+
+.editor blockquote {
+  margin: 10px 0;
+  border-left: 3px solid #2563eb;
+  padding: 8px 12px;
+  background: #f8fafc;
+  color: #475569;
 }
 
 .subtasks {

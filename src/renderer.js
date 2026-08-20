@@ -9,6 +9,7 @@ const emptyState = document.querySelector("#empty-state");
 const detailCard = document.querySelector("#detail-card");
 const detailTitle = document.querySelector("#detail-title");
 const detailContent = document.querySelector("#detail-content");
+const editorButtons = document.querySelectorAll("[data-command]");
 const deleteItemButton = document.querySelector("#delete-item-button");
 const subtaskForm = document.querySelector("#subtask-form");
 const subtaskInput = document.querySelector("#subtask-input");
@@ -53,9 +54,15 @@ function itemProgress(item) {
 }
 
 function previewText(item) {
-  const content = item.content.trim();
+  const content = stripHtml(item.content).trim();
   if (!content) return "내용 없음";
   return content.length > 120 ? `${content.slice(0, 120)}...` : content;
+}
+
+function stripHtml(html) {
+  const element = document.createElement("div");
+  element.innerHTML = html;
+  return element.textContent ?? "";
 }
 
 async function persist() {
@@ -137,7 +144,9 @@ function renderDetail() {
   if (!item) return;
 
   detailTitle.value = item.title;
-  detailContent.value = item.content;
+  if (detailContent.innerHTML !== item.content) {
+    detailContent.innerHTML = item.content;
+  }
   subtaskCount.textContent = `${item.subtasks.filter((subtask) => !subtask.done).length} left`;
   subtaskList.replaceChildren();
 
@@ -192,9 +201,17 @@ detailTitle.addEventListener("change", async () => {
   await updateSelectedItem({ title });
 });
 
-detailContent.addEventListener("change", async () => {
-  await updateSelectedItem({ content: detailContent.value });
+detailContent.addEventListener("input", async () => {
+  await updateSelectedItem({ content: detailContent.innerHTML });
 });
+
+for (const button of editorButtons) {
+  button.addEventListener("click", () => {
+    detailContent.focus();
+    document.execCommand(button.dataset.command, false, button.dataset.value ?? null);
+    detailContent.dispatchEvent(new Event("input"));
+  });
+}
 
 subtaskForm.addEventListener("submit", async (event) => {
   event.preventDefault();
