@@ -161,11 +161,13 @@ function CustomSelect({
   value,
   options,
   ariaLabel,
+  icon,
   onChange
 }: {
   value: string;
   options: SelectOption[];
   ariaLabel: string;
+  icon?: ReactNode;
   onChange: (value: string) => void;
 }) {
   const [open, setOpen] = useState(false);
@@ -190,10 +192,11 @@ function CustomSelect({
         aria-expanded={open}
         onClick={() => setOpen((current) => !current)}
       >
+        {icon ? <span className="select-leading-icon">{icon}</span> : null}
         {selected?.color ? (
           <span className="select-swatch" style={{ "--select-color": selected.color } as React.CSSProperties} />
         ) : null}
-        <span>{selected?.name ?? "선택"}</span>
+        <span className="select-value">{selected?.name ?? "선택"}</span>
         <ChevronDown aria-hidden="true" />
       </button>
       {open ? (
@@ -218,15 +221,6 @@ function CustomSelect({
           ))}
         </div>
       ) : null}
-    </div>
-  );
-}
-
-function ToolbarSelect({ icon, children }: { icon: ReactNode; children: ReactNode }) {
-  return (
-    <div className="filterbar">
-      {icon}
-      {children}
     </div>
   );
 }
@@ -548,30 +542,27 @@ function App() {
         {currentView === "list" ? (
           <section className="list-view" aria-label="Items">
             <div className="list-toolbar">
-              <ToolbarSelect icon={<Filter aria-hidden="true" />}>
-                <CustomSelect
-                  ariaLabel="Filter by category"
-                  value={activeCategoryFilter}
-                  options={categoryFilterOptions}
-                  onChange={setActiveCategoryFilter}
-                />
-              </ToolbarSelect>
-              <ToolbarSelect icon={<CircleDot aria-hidden="true" />}>
-                <CustomSelect
-                  ariaLabel="Filter by status"
-                  value={activeStatusFilter}
-                  options={statusFilterOptions}
-                  onChange={setActiveStatusFilter}
-                />
-              </ToolbarSelect>
-              <ToolbarSelect icon={<ArrowUpDown aria-hidden="true" />}>
-                <CustomSelect
-                  ariaLabel="Sort items"
-                  value={activeSort}
-                  options={sortOptions}
-                  onChange={(value) => setActiveSort(value as SortKey)}
-                />
-              </ToolbarSelect>
+              <CustomSelect
+                ariaLabel="Filter by category"
+                value={activeCategoryFilter}
+                options={categoryFilterOptions}
+                icon={<Filter aria-hidden="true" />}
+                onChange={setActiveCategoryFilter}
+              />
+              <CustomSelect
+                ariaLabel="Filter by status"
+                value={activeStatusFilter}
+                options={statusFilterOptions}
+                icon={<CircleDot aria-hidden="true" />}
+                onChange={setActiveStatusFilter}
+              />
+              <CustomSelect
+                ariaLabel="Sort items"
+                value={activeSort}
+                options={sortOptions}
+                icon={<ArrowUpDown aria-hidden="true" />}
+                onChange={(value) => setActiveSort(value as SortKey)}
+              />
 
               <div className="search-field">
                 <Search aria-hidden="true" />
