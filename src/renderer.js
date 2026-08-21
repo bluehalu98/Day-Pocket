@@ -277,6 +277,7 @@ function renderList() {
     const card = itemTemplate.content.firstElementChild.cloneNode(true);
     const expandButton = card.querySelector(".expand-button");
     const selectButton = card.querySelector(".item-select");
+    const categoryTag = card.querySelector(".category-tag");
     const title = card.querySelector(".item-title");
     const meta = card.querySelector(".item-meta");
     const preview = card.querySelector(".item-preview");
@@ -284,8 +285,9 @@ function renderList() {
 
     card.classList.toggle("selected", item.id === selectedItemId);
     card.classList.toggle("expanded", isExpanded);
+    categoryTag.textContent = categoryName(item.categoryId ?? "uncategorized");
     title.textContent = item.title;
-    meta.textContent = `${categoryName(item.categoryId ?? "uncategorized")} · ${itemProgress(item)}`;
+    meta.textContent = itemProgress(item);
     expandButton.textContent = isExpanded ? "▾" : "▸";
 
     if (isExpanded) {
