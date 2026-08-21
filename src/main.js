@@ -4,6 +4,7 @@ const path = require("node:path");
 
 const DATA_FILE = "day-pocket.json";
 const APP_NAME = "Day Pocket";
+const DEV_SERVER_URL = process.env.VITE_DEV_SERVER_URL;
 
 function getDataPath() {
   return path.join(app.getPath("userData"), DATA_FILE);
@@ -86,7 +87,11 @@ function createWindow() {
     }
   });
 
-  window.loadFile(path.join(__dirname, "index.html"));
+  if (DEV_SERVER_URL) {
+    window.loadURL(DEV_SERVER_URL);
+  } else {
+    window.loadFile(path.join(__dirname, "..", "dist", "index.html"));
+  }
 }
 
 app.whenReady().then(() => {
