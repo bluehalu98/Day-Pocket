@@ -33,7 +33,7 @@ const subtaskList = document.querySelector("#subtask-list");
 const subtaskCount = document.querySelector("#subtask-count");
 
 let items = [];
-let categories = [{ id: "uncategorized", name: "미분류", locked: true }];
+let categories = [{ id: "uncategorized", name: "미분류", color: "#64748b", locked: true }];
 let selectedItemId = null;
 let currentView = "list";
 let activeCategoryFilter = "all";
@@ -70,6 +70,23 @@ function selectedItem() {
 
 function categoryName(categoryId) {
   return categories.find((category) => category.id === categoryId)?.name ?? "미분류";
+}
+
+function categoryById(categoryId) {
+  return categories.find((category) => category.id === categoryId) ?? categories[0];
+}
+
+function randomHexColor() {
+  const channel = () => Math.floor(96 + Math.random() * 128);
+  return `#${[channel(), channel(), channel()]
+    .map((value) => value.toString(16).padStart(2, "0"))
+    .join("")}`;
+}
+
+function hexToRgb(hex) {
+  const normalized = hex.replace("#", "");
+  const value = Number.parseInt(normalized, 16);
+  return `${(value >> 16) & 255}, ${(value >> 8) & 255}, ${value & 255}`;
 }
 
 function visibleItems() {
@@ -198,6 +215,12 @@ function renderCategories() {
     const name = document.createElement("span");
     name.textContent = category.name;
 
+    const colorInput = document.createElement("input");
+    colorInput.type = "color";
+    colorInput.value = category.color;
+    colorInput.className = "category-color-input";
+    colorInput.setAttribute("aria-label", `${category.name} color`);
+
     const deleteButton = document.createElement("button");
     deleteButton.className = "icon-button";
     deleteButton.type = "button";
@@ -215,7 +238,15 @@ function renderCategories() {
       render();
     });
 
-    row.append(name, deleteButton);
+    colorInput.addEventListener("change", async () => {
+      categories = categories.map((entry) =>
+        entry.id === category.id ? { ...entry, color: colorInput.value } : entry
+      );
+      await persist();
+      render();
+    });
+
+    row.append(name, colorInput, deleteButton);
     categoryList.append(row);
   }
 }
@@ -282,10 +313,13 @@ function renderList() {
     const meta = card.querySelector(".item-meta");
     const preview = card.querySelector(".item-preview");
     const isExpanded = expandedItemIds.has(item.id);
+    const category = categoryById(item.categoryId ?? "uncategorized");
 
     card.classList.toggle("selected", item.id === selectedItemId);
     card.classList.toggle("expanded", isExpanded);
-    categoryTag.textContent = categoryName(item.categoryId ?? "uncategorized");
+    categoryTag.textContent = category.name;
+    categoryTag.style.setProperty("--tag-color", category.color);
+    categoryTag.style.setProperty("--tag-rgb", hexToRgb(category.color));
     title.textContent = item.title;
     meta.textContent = itemProgress(item);
     expandButton.textContent = isExpanded ? "▾" : "▸";
@@ -442,7 +476,7 @@ categoryForm.addEventListener("submit", async (event) => {
   if (!name) return;
   if (categories.some((category) => category.name === name)) return;
 
-  categories = [...categories, { id: crypto.randomUUID(), name, locked: false }];
+  categories = [...categories, { id: crypto.randomUUID(), name, color: randomHexColor(), locked: false }];
   categoryNameInput.value = "";
   await persist();
   render();

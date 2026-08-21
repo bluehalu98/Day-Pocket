@@ -317,11 +317,11 @@ h1 {
   flex: 0 0 auto;
   max-width: 120px;
   overflow: hidden;
-  border: 1px solid rgba(94, 234, 212, 0.3);
+  border: 1px solid rgba(var(--tag-rgb), 0.34);
   border-radius: 999px;
   padding: 3px 8px;
-  background: rgba(20, 184, 166, 0.12);
-  color: #99f6e4;
+  background: rgba(var(--tag-rgb), 0.14);
+  color: var(--tag-color);
   font-size: 11px;
   font-weight: 850;
   line-height: 1.25;
@@ -667,7 +667,7 @@ h1 {
 
 .category-row {
   display: grid;
-  grid-template-columns: 1fr 34px;
+  grid-template-columns: 1fr 44px 34px;
   align-items: center;
   gap: 10px;
   border: 1px solid #2f3746;
@@ -680,6 +680,26 @@ h1 {
   overflow-wrap: anywhere;
   color: #e5e7eb;
   font-weight: 800;
+}
+
+.category-color-input {
+  width: 44px;
+  height: 34px;
+  overflow: hidden;
+  border: 1px solid #2f3746;
+  border-radius: 8px;
+  padding: 0;
+  background: #252c38;
+  cursor: pointer;
+}
+
+.category-color-input::-webkit-color-swatch-wrapper {
+  padding: 4px;
+}
+
+.category-color-input::-webkit-color-swatch {
+  border: 0;
+  border-radius: 5px;
 }
 
 .category-row button:disabled {

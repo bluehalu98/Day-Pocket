@@ -10,7 +10,11 @@ function getDataPath() {
 }
 
 function normalizeState(parsed) {
-  const defaultCategory = { id: "uncategorized", name: "미분류", locked: true };
+  const defaultCategory = { id: "uncategorized", name: "미분류", color: "#64748b", locked: true };
+  const normalizeCategory = (category) => ({
+    ...category,
+    color: /^#[0-9a-f]{6}$/i.test(category.color ?? "") ? category.color : defaultCategory.color
+  });
 
   if (Array.isArray(parsed)) {
     return {
@@ -20,7 +24,7 @@ function normalizeState(parsed) {
   }
 
   if (parsed && typeof parsed === "object") {
-    const categories = Array.isArray(parsed.categories) ? parsed.categories : [];
+    const categories = Array.isArray(parsed.categories) ? parsed.categories.map(normalizeCategory) : [];
     const hasDefault = categories.some((category) => category.id === defaultCategory.id);
 
     return {
