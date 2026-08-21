@@ -7,6 +7,7 @@ const itemCategorySelect = document.querySelector("#item-category-select");
 const itemStatusSelect = document.querySelector("#item-status-select");
 const categoryFilter = document.querySelector("#category-filter");
 const statusFilter = document.querySelector("#status-filter");
+const sortSelect = document.querySelector("#sort-select");
 const itemTemplate = document.querySelector("#item-template");
 const subtaskTemplate = document.querySelector("#subtask-template");
 
@@ -48,6 +49,7 @@ let selectedItemId = null;
 let currentView = "list";
 let activeCategoryFilter = "all";
 let activeStatusFilter = "all";
+let activeSort = "updated-desc";
 let searchQuery = "";
 const expandedItemIds = new Set();
 let saveTimer = null;
@@ -108,13 +110,39 @@ function hexToRgb(hex) {
 function visibleItems() {
   const query = searchQuery.trim().toLowerCase();
 
-  return items.filter((item) => {
+  const filteredItems = items.filter((item) => {
     const categoryMatches =
       activeCategoryFilter === "all" || (item.categoryId ?? "uncategorized") === activeCategoryFilter;
     const statusMatches = activeStatusFilter === "all" || (item.statusId ?? "unset") === activeStatusFilter;
     const searchTarget = `${item.title} ${stripHtml(item.content)}`.toLowerCase();
     return categoryMatches && statusMatches && (!query || searchTarget.includes(query));
   });
+
+  return [...filteredItems].sort((first, second) => compareItems(first, second, activeSort));
+}
+
+function compareItems(first, second, sortKey) {
+  const compareText = (a, b) => a.localeCompare(b, "ko-KR", { sensitivity: "base", numeric: true });
+  const compareDate = (a, b) => new Date(a).getTime() - new Date(b).getTime();
+
+  switch (sortKey) {
+    case "updated-asc":
+      return compareDate(first.updatedAt ?? first.createdAt, second.updatedAt ?? second.createdAt);
+    case "created-desc":
+      return compareDate(second.createdAt, first.createdAt);
+    case "title-asc":
+      return compareText(first.title, second.title);
+    case "category-asc":
+      return compareText(
+        categoryById(first.categoryId ?? "uncategorized").name,
+        categoryById(second.categoryId ?? "uncategorized").name
+      );
+    case "status-asc":
+      return compareText(statusById(first.statusId ?? "unset").name, statusById(second.statusId ?? "unset").name);
+    case "updated-desc":
+    default:
+      return compareDate(second.updatedAt ?? second.createdAt, first.updatedAt ?? first.createdAt);
+  }
 }
 
 function itemProgress(item) {
@@ -364,8 +392,10 @@ function handleEditorShortcut(event) {
 
 function renderList() {
   itemList.replaceChildren();
+  sortSelect.value = activeSort;
+  const renderedItems = visibleItems();
 
-  for (const item of visibleItems()) {
+  for (const item of renderedItems) {
     const card = itemTemplate.content.firstElementChild.cloneNode(true);
     const expandButton = card.querySelector(".expand-button");
     const selectButton = card.querySelector(".item-select");
@@ -383,9 +413,12 @@ function renderList() {
     categoryTag.textContent = category.name;
     categoryTag.style.setProperty("--tag-color", category.color);
     categoryTag.style.setProperty("--tag-rgb", hexToRgb(category.color));
-    statusTag.textContent = status.name;
-    statusTag.style.setProperty("--tag-color", status.color);
-    statusTag.style.setProperty("--tag-rgb", hexToRgb(status.color));
+    statusTag.hidden = status.id === "unset";
+    if (!statusTag.hidden) {
+      statusTag.textContent = status.name;
+      statusTag.style.setProperty("--tag-color", status.color);
+      statusTag.style.setProperty("--tag-rgb", hexToRgb(status.color));
+    }
     title.textContent = item.title;
     meta.textContent = itemProgress(item);
     expandButton.textContent = isExpanded ? "▾" : "▸";
@@ -426,7 +459,7 @@ function renderList() {
     itemList.append(card);
   }
 
-  counter.textContent = `${visibleItems().length}/${items.length} items`;
+  counter.textContent = `${renderedItems.length}/${items.length} items`;
 }
 
 function renderDetail() {
@@ -588,6 +621,12 @@ categoryFilter.addEventListener("change", () => {
 
 statusFilter.addEventListener("change", () => {
   activeStatusFilter = statusFilter.value;
+  renderList();
+  syncIcons();
+});
+
+sortSelect.addEventListener("change", () => {
+  activeSort = sortSelect.value;
   renderList();
   syncIcons();
 });
