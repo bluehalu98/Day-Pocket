@@ -19,6 +19,7 @@ import {
   Quote,
   Search,
   Tags,
+  Table,
   Trash2,
   Underline,
   X
@@ -131,6 +132,11 @@ function compareItems(first: PocketItem, second: PocketItem, sortKey: SortKey, c
 
 function execEditorCommand(command: string, value?: string) {
   document.execCommand(command, false, value ?? undefined);
+}
+
+function insertEditorTable() {
+  const rows = Array.from({ length: 3 }, () => "<tr><td><br></td><td><br></td><td><br></td></tr>").join("");
+  execEditorCommand("insertHTML", `<table><tbody>${rows}</tbody></table><p><br></p>`);
 }
 
 function blockTextBeforeCursor() {
@@ -654,24 +660,26 @@ function App() {
                   </button>
                 </div>
 
-                <label className="field compact-field">
-                  <span>분류</span>
-                  <CustomSelect
-                    ariaLabel="Detail category"
-                    value={selectedItem.categoryId}
-                    options={categoryOptions}
-                    onChange={(value) => updateSelectedItem({ categoryId: value })}
-                  />
-                </label>
-                <label className="field compact-field">
-                  <span>상태</span>
-                  <CustomSelect
-                    ariaLabel="Detail status"
-                    value={selectedItem.statusId}
-                    options={statusOptions}
-                    onChange={(value) => updateSelectedItem({ statusId: value })}
-                  />
-                </label>
+                <div className="detail-meta-grid">
+                  <label className="field compact-field">
+                    <span>분류</span>
+                    <CustomSelect
+                      ariaLabel="Detail category"
+                      value={selectedItem.categoryId}
+                      options={categoryOptions}
+                      onChange={(value) => updateSelectedItem({ categoryId: value })}
+                    />
+                  </label>
+                  <label className="field compact-field">
+                    <span>상태</span>
+                    <CustomSelect
+                      ariaLabel="Detail status"
+                      value={selectedItem.statusId}
+                      options={statusOptions}
+                      onChange={(value) => updateSelectedItem({ statusId: value })}
+                    />
+                  </label>
+                </div>
 
                 <section className="field">
                   <span>내용</span>
@@ -684,6 +692,7 @@ function App() {
                         ["insertUnorderedList", <List aria-hidden="true" />],
                         ["insertOrderedList", <ListOrdered aria-hidden="true" />],
                         ["formatBlock", <Quote aria-hidden="true" />, "<blockquote>"],
+                        ["insertTable", <Table aria-hidden="true" />],
                         ["removeFormat", <Eraser aria-hidden="true" />]
                       ].map(([command, icon, value]) => (
                         <button
@@ -691,7 +700,11 @@ function App() {
                           type="button"
                           onClick={() => {
                             editorRef.current?.focus();
-                            execEditorCommand(command as string, value as string | undefined);
+                            if (command === "insertTable") {
+                              insertEditorTable();
+                            } else {
+                              execEditorCommand(command as string, value as string | undefined);
+                            }
                             scheduleContentSave();
                           }}
                         >

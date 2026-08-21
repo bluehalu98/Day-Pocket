@@ -489,6 +489,13 @@ h1 {
   font-weight: 850;
 }
 
+.detail-meta-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(220px, 280px));
+  gap: 12px;
+  align-items: start;
+}
+
 .danger-button {
   width: 43px;
   height: 43px;
@@ -593,6 +600,32 @@ h1 {
   padding: 8px 12px;
   background: #141820;
   color: #cbd5e1;
+}
+
+.editor table {
+  width: 100%;
+  margin: 10px 0;
+  border-collapse: collapse;
+  table-layout: fixed;
+  overflow: hidden;
+  border: 1px solid #334155;
+  border-radius: 8px;
+}
+
+.editor td,
+.editor th {
+  min-width: 72px;
+  border: 1px solid #334155;
+  padding: 9px 10px;
+  background: #141820;
+  color: #d8dee9;
+  vertical-align: top;
+}
+
+.editor th {
+  background: #1d2531;
+  color: #f3f4f6;
+  font-weight: 850;
 }
 
 .subtasks {
@@ -787,6 +820,7 @@ h1 {
 
   .topbar,
   .list-toolbar,
+  .detail-meta-grid,
   .category-form,
   .detail-header {
     grid-template-columns: 1fr;
