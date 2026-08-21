@@ -326,6 +326,8 @@ h1 {
 }
 
 .item-card {
+  min-width: 0;
+  overflow: hidden;
   padding: 8px;
 }
 
@@ -341,6 +343,7 @@ h1 {
   grid-template-columns: 34px 1fr;
   align-items: center;
   gap: 4px;
+  min-width: 0;
 }
 
 .expand-button,
@@ -416,10 +419,23 @@ h1 {
 
 .item-preview {
   display: none;
+  min-width: 0;
+  max-width: 100%;
+  overflow: hidden;
   padding: 8px 10px 10px 38px;
   color: #b6c0ce;
   font-size: 13px;
   line-height: 1.5;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+.item-preview p {
+  min-width: 0;
+  max-width: 100%;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+  white-space: pre-wrap;
 }
 
 .item-card.expanded .item-preview {
@@ -436,7 +452,9 @@ h1 {
 .nested-subtasks li {
   position: relative;
   padding-left: 16px;
+  min-width: 0;
   overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 .nested-subtasks li::before {
