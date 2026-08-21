@@ -11,31 +11,48 @@ function getDataPath() {
 
 function normalizeState(parsed) {
   const defaultCategory = { id: "uncategorized", name: "미분류", color: "#64748b", locked: true };
-  const normalizeCategory = (category) => ({
-    ...category,
-    color: /^#[0-9a-f]{6}$/i.test(category.color ?? "") ? category.color : defaultCategory.color
+  const defaultStatus = { id: "unset", name: "미지정", color: "#94a3b8", locked: true };
+  const normalizeLabel = (label, fallbackColor) => ({
+    ...label,
+    color: /^#[0-9a-f]{6}$/i.test(label.color ?? "") ? label.color : fallbackColor
   });
 
   if (Array.isArray(parsed)) {
     return {
-      items: parsed.map((item) => ({ ...item, categoryId: item.categoryId ?? defaultCategory.id })),
-      categories: [defaultCategory]
+      items: parsed.map((item) => ({
+        ...item,
+        categoryId: item.categoryId ?? defaultCategory.id,
+        statusId: item.statusId ?? defaultStatus.id
+      })),
+      categories: [defaultCategory],
+      statuses: [defaultStatus]
     };
   }
 
   if (parsed && typeof parsed === "object") {
-    const categories = Array.isArray(parsed.categories) ? parsed.categories.map(normalizeCategory) : [];
+    const categories = Array.isArray(parsed.categories)
+      ? parsed.categories.map((category) => normalizeLabel(category, defaultCategory.color))
+      : [];
+    const statuses = Array.isArray(parsed.statuses)
+      ? parsed.statuses.map((status) => normalizeLabel(status, defaultStatus.color))
+      : [];
     const hasDefault = categories.some((category) => category.id === defaultCategory.id);
+    const hasDefaultStatus = statuses.some((status) => status.id === defaultStatus.id);
 
     return {
       items: Array.isArray(parsed.items)
-        ? parsed.items.map((item) => ({ ...item, categoryId: item.categoryId ?? defaultCategory.id }))
+        ? parsed.items.map((item) => ({
+            ...item,
+            categoryId: item.categoryId ?? defaultCategory.id,
+            statusId: item.statusId ?? defaultStatus.id
+          }))
         : [],
-      categories: hasDefault ? categories : [defaultCategory, ...categories]
+      categories: hasDefault ? categories : [defaultCategory, ...categories],
+      statuses: hasDefaultStatus ? statuses : [defaultStatus, ...statuses]
     };
   }
 
-  return { items: [], categories: [defaultCategory] };
+  return { items: [], categories: [defaultCategory], statuses: [defaultStatus] };
 }
 
 async function readState() {

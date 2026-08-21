@@ -114,7 +114,7 @@ h1 {
 
 .list-toolbar {
   display: grid;
-  grid-template-columns: minmax(160px, 220px) 1fr auto;
+  grid-template-columns: minmax(150px, 200px) minmax(150px, 200px) 1fr auto;
   gap: 10px;
   align-items: center;
   margin-bottom: 14px;
@@ -313,7 +313,8 @@ h1 {
   gap: 8px;
 }
 
-.category-tag {
+.category-tag,
+.status-tag {
   flex: 0 0 auto;
   max-width: 120px;
   overflow: hidden;
@@ -327,6 +328,10 @@ h1 {
   line-height: 1.25;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.status-tag {
+  border-style: dashed;
 }
 
 .item-title {

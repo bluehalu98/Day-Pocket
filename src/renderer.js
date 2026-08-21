@@ -4,7 +4,9 @@ const itemSearchInput = document.querySelector("#item-search-input");
 const itemList = document.querySelector("#item-list");
 const counter = document.querySelector("#counter");
 const itemCategorySelect = document.querySelector("#item-category-select");
+const itemStatusSelect = document.querySelector("#item-status-select");
 const categoryFilter = document.querySelector("#category-filter");
+const statusFilter = document.querySelector("#status-filter");
 const itemTemplate = document.querySelector("#item-template");
 const subtaskTemplate = document.querySelector("#subtask-template");
 
@@ -15,15 +17,22 @@ const newItemButton = document.querySelector("#new-item-button");
 const itemOverlay = document.querySelector("#item-overlay");
 const itemOverlayClose = document.querySelector("#item-overlay-close");
 const categoryManagerButton = document.querySelector("#category-manager-button");
+const statusManagerButton = document.querySelector("#status-manager-button");
 const categoryOverlay = document.querySelector("#category-overlay");
 const categoryOverlayClose = document.querySelector("#category-overlay-close");
 const categoryForm = document.querySelector("#category-form");
 const categoryNameInput = document.querySelector("#category-name-input");
 const categoryList = document.querySelector("#category-list");
+const statusOverlay = document.querySelector("#status-overlay");
+const statusOverlayClose = document.querySelector("#status-overlay-close");
+const statusForm = document.querySelector("#status-form");
+const statusNameInput = document.querySelector("#status-name-input");
+const statusList = document.querySelector("#status-list");
 const emptyState = document.querySelector("#empty-state");
 const detailCard = document.querySelector("#detail-card");
 const detailTitle = document.querySelector("#detail-title");
 const detailCategorySelect = document.querySelector("#detail-category-select");
+const detailStatusSelect = document.querySelector("#detail-status-select");
 const detailContent = document.querySelector("#detail-content");
 const editorButtons = document.querySelectorAll("[data-command]");
 const deleteItemButton = document.querySelector("#delete-item-button");
@@ -34,9 +43,11 @@ const subtaskCount = document.querySelector("#subtask-count");
 
 let items = [];
 let categories = [{ id: "uncategorized", name: "미분류", color: "#64748b", locked: true }];
+let statuses = [{ id: "unset", name: "미지정", color: "#94a3b8", locked: true }];
 let selectedItemId = null;
 let currentView = "list";
 let activeCategoryFilter = "all";
+let activeStatusFilter = "all";
 let searchQuery = "";
 const expandedItemIds = new Set();
 let saveTimer = null;
@@ -48,6 +59,7 @@ function createItem(title) {
     id: crypto.randomUUID(),
     title,
     categoryId: itemCategorySelect.value || "uncategorized",
+    statusId: itemStatusSelect.value || "unset",
     content: "",
     subtasks: [],
     createdAt: now,
@@ -76,6 +88,10 @@ function categoryById(categoryId) {
   return categories.find((category) => category.id === categoryId) ?? categories[0];
 }
 
+function statusById(statusId) {
+  return statuses.find((status) => status.id === statusId) ?? statuses[0];
+}
+
 function randomHexColor() {
   const channel = () => Math.floor(96 + Math.random() * 128);
   return `#${[channel(), channel(), channel()]
@@ -95,8 +111,9 @@ function visibleItems() {
   return items.filter((item) => {
     const categoryMatches =
       activeCategoryFilter === "all" || (item.categoryId ?? "uncategorized") === activeCategoryFilter;
+    const statusMatches = activeStatusFilter === "all" || (item.statusId ?? "unset") === activeStatusFilter;
     const searchTarget = `${item.title} ${stripHtml(item.content)}`.toLowerCase();
-    return categoryMatches && (!query || searchTarget.includes(query));
+    return categoryMatches && statusMatches && (!query || searchTarget.includes(query));
   });
 }
 
@@ -126,7 +143,7 @@ function syncIcons() {
 }
 
 async function persist() {
-  await window.dayPocketStore.save({ items, categories });
+  await window.dayPocketStore.save({ items, categories, statuses });
 }
 
 async function updateSelectedItem(patch) {
@@ -174,6 +191,7 @@ function closeItemOverlay() {
   itemOverlay.classList.add("hidden");
   itemTitleInput.value = "";
   itemCategorySelect.value = "uncategorized";
+  itemStatusSelect.value = "unset";
 }
 
 function option(category, selectedId) {
@@ -186,11 +204,16 @@ function option(category, selectedId) {
 
 function renderCategorySelects() {
   const itemCreateCategoryId = itemCategorySelect.value || "uncategorized";
+  const itemCreateStatusId = itemStatusSelect.value || "unset";
   const selectedItemCategoryId = selectedItem()?.categoryId ?? "uncategorized";
+  const selectedItemStatusId = selectedItem()?.statusId ?? "unset";
 
   itemCategorySelect.replaceChildren();
+  itemStatusSelect.replaceChildren();
   detailCategorySelect.replaceChildren();
+  detailStatusSelect.replaceChildren();
   categoryFilter.replaceChildren();
+  statusFilter.replaceChildren();
 
   const allOption = document.createElement("option");
   allOption.value = "all";
@@ -198,57 +221,95 @@ function renderCategorySelects() {
   allOption.selected = activeCategoryFilter === "all";
   categoryFilter.append(allOption);
 
+  const allStatusOption = document.createElement("option");
+  allStatusOption.value = "all";
+  allStatusOption.textContent = "전체";
+  allStatusOption.selected = activeStatusFilter === "all";
+  statusFilter.append(allStatusOption);
+
   for (const category of categories) {
     itemCategorySelect.append(option(category, itemCreateCategoryId));
     detailCategorySelect.append(option(category, selectedItemCategoryId));
     categoryFilter.append(option(category, activeCategoryFilter));
   }
+
+  for (const status of statuses) {
+    itemStatusSelect.append(option(status, itemCreateStatusId));
+    detailStatusSelect.append(option(status, selectedItemStatusId));
+    statusFilter.append(option(status, activeStatusFilter));
+  }
 }
 
-function renderCategories() {
-  categoryList.replaceChildren();
+function renderLabelList({ labels, list, lockedFallbackId, onUpdate, onDelete }) {
+  list.replaceChildren();
 
-  for (const category of categories) {
+  for (const label of labels) {
     const row = document.createElement("li");
     row.className = "category-row";
 
     const name = document.createElement("span");
-    name.textContent = category.name;
+    name.textContent = label.name;
 
     const colorInput = document.createElement("input");
     colorInput.type = "color";
-    colorInput.value = category.color;
+    colorInput.value = label.color;
     colorInput.className = "category-color-input";
-    colorInput.setAttribute("aria-label", `${category.name} color`);
+    colorInput.setAttribute("aria-label", `${label.name} color`);
 
     const deleteButton = document.createElement("button");
     deleteButton.className = "icon-button";
     deleteButton.type = "button";
-    deleteButton.setAttribute("aria-label", `Delete ${category.name}`);
-    deleteButton.disabled = Boolean(category.locked);
+    deleteButton.setAttribute("aria-label", `Delete ${label.name}`);
+    deleteButton.disabled = Boolean(label.locked);
     deleteButton.innerHTML = '<i data-lucide="trash-2" aria-hidden="true"></i>';
 
     deleteButton.addEventListener("click", async () => {
-      categories = categories.filter((entry) => entry.id !== category.id);
-      items = items.map((item) =>
-        item.categoryId === category.id ? { ...item, categoryId: "uncategorized" } : item
-      );
-      if (activeCategoryFilter === category.id) activeCategoryFilter = "all";
+      onDelete(label.id, lockedFallbackId);
       await persist();
       render();
     });
 
     colorInput.addEventListener("change", async () => {
-      categories = categories.map((entry) =>
-        entry.id === category.id ? { ...entry, color: colorInput.value } : entry
-      );
+      onUpdate(label.id, colorInput.value);
       await persist();
       render();
     });
 
     row.append(name, colorInput, deleteButton);
-    categoryList.append(row);
+    list.append(row);
   }
+}
+
+function renderCategories() {
+  renderLabelList({
+    labels: categories,
+    list: categoryList,
+    lockedFallbackId: "uncategorized",
+    onUpdate: (id, color) => {
+      categories = categories.map((category) => (category.id === id ? { ...category, color } : category));
+    },
+    onDelete: (id, fallbackId) => {
+      categories = categories.filter((category) => category.id !== id);
+      items = items.map((item) => (item.categoryId === id ? { ...item, categoryId: fallbackId } : item));
+      if (activeCategoryFilter === id) activeCategoryFilter = "all";
+    }
+  });
+}
+
+function renderStatuses() {
+  renderLabelList({
+    labels: statuses,
+    list: statusList,
+    lockedFallbackId: "unset",
+    onUpdate: (id, color) => {
+      statuses = statuses.map((status) => (status.id === id ? { ...status, color } : status));
+    },
+    onDelete: (id, fallbackId) => {
+      statuses = statuses.filter((status) => status.id !== id);
+      items = items.map((item) => (item.statusId === id ? { ...item, statusId: fallbackId } : item));
+      if (activeStatusFilter === id) activeStatusFilter = "all";
+    }
+  });
 }
 
 function blockTextBeforeCursor() {
@@ -309,17 +370,22 @@ function renderList() {
     const expandButton = card.querySelector(".expand-button");
     const selectButton = card.querySelector(".item-select");
     const categoryTag = card.querySelector(".category-tag");
+    const statusTag = card.querySelector(".status-tag");
     const title = card.querySelector(".item-title");
     const meta = card.querySelector(".item-meta");
     const preview = card.querySelector(".item-preview");
     const isExpanded = expandedItemIds.has(item.id);
     const category = categoryById(item.categoryId ?? "uncategorized");
+    const status = statusById(item.statusId ?? "unset");
 
     card.classList.toggle("selected", item.id === selectedItemId);
     card.classList.toggle("expanded", isExpanded);
     categoryTag.textContent = category.name;
     categoryTag.style.setProperty("--tag-color", category.color);
     categoryTag.style.setProperty("--tag-rgb", hexToRgb(category.color));
+    statusTag.textContent = status.name;
+    statusTag.style.setProperty("--tag-color", status.color);
+    statusTag.style.setProperty("--tag-rgb", hexToRgb(status.color));
     title.textContent = item.title;
     meta.textContent = itemProgress(item);
     expandButton.textContent = isExpanded ? "▾" : "▸";
@@ -373,6 +439,7 @@ function renderDetail() {
 
   detailTitle.value = item.title;
   detailCategorySelect.value = item.categoryId ?? "uncategorized";
+  detailStatusSelect.value = item.statusId ?? "unset";
   if (detailContent.innerHTML !== item.content) {
     detailContent.innerHTML = item.content;
   }
@@ -412,6 +479,7 @@ function render() {
   backButton.classList.toggle("hidden", currentView !== "detail");
   renderCategorySelects();
   renderCategories();
+  renderStatuses();
   renderList();
   renderDetail();
   syncIcons();
@@ -460,13 +528,29 @@ categoryManagerButton.addEventListener("click", () => {
   syncIcons();
 });
 
+statusManagerButton.addEventListener("click", () => {
+  statusOverlay.classList.remove("hidden");
+  statusNameInput.focus();
+  syncIcons();
+});
+
 categoryOverlayClose.addEventListener("click", () => {
   categoryOverlay.classList.add("hidden");
+});
+
+statusOverlayClose.addEventListener("click", () => {
+  statusOverlay.classList.add("hidden");
 });
 
 categoryOverlay.addEventListener("click", (event) => {
   if (event.target === categoryOverlay) {
     categoryOverlay.classList.add("hidden");
+  }
+});
+
+statusOverlay.addEventListener("click", (event) => {
+  if (event.target === statusOverlay) {
+    statusOverlay.classList.add("hidden");
   }
 });
 
@@ -483,8 +567,27 @@ categoryForm.addEventListener("submit", async (event) => {
   categoryNameInput.focus();
 });
 
+statusForm.addEventListener("submit", async (event) => {
+  event.preventDefault();
+  const name = statusNameInput.value.trim();
+  if (!name) return;
+  if (statuses.some((status) => status.name === name)) return;
+
+  statuses = [...statuses, { id: crypto.randomUUID(), name, color: randomHexColor(), locked: false }];
+  statusNameInput.value = "";
+  await persist();
+  render();
+  statusNameInput.focus();
+});
+
 categoryFilter.addEventListener("change", () => {
   activeCategoryFilter = categoryFilter.value;
+  renderList();
+  syncIcons();
+});
+
+statusFilter.addEventListener("change", () => {
+  activeStatusFilter = statusFilter.value;
   renderList();
   syncIcons();
 });
@@ -496,6 +599,10 @@ detailTitle.addEventListener("change", async () => {
 
 detailCategorySelect.addEventListener("change", async () => {
   await updateSelectedItem({ categoryId: detailCategorySelect.value || "uncategorized" });
+});
+
+detailStatusSelect.addEventListener("change", async () => {
+  await updateSelectedItem({ statusId: detailStatusSelect.value || "unset" });
 });
 
 detailContent.addEventListener("keydown", handleEditorShortcut);
@@ -535,6 +642,7 @@ deleteItemButton.addEventListener("click", async () => {
 window.dayPocketStore.load().then((state) => {
   items = state.items ?? [];
   categories = state.categories ?? categories;
+  statuses = state.statuses ?? statuses;
   selectedItemId = null;
   currentView = "list";
   render();
