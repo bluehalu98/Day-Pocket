@@ -10,6 +10,7 @@ import {
   Check,
   ChevronDown,
   CircleDot,
+  Columns3,
   Eraser,
   Filter,
   Italic,
@@ -17,9 +18,11 @@ import {
   ListOrdered,
   Plus,
   Quote,
+  Rows3,
   Search,
   Tags,
   Table,
+  Table2,
   Trash2,
   Underline,
   X
@@ -134,9 +137,49 @@ function execEditorCommand(command: string, value?: string) {
   document.execCommand(command, false, value ?? undefined);
 }
 
-function insertEditorTable() {
-  const rows = Array.from({ length: 3 }, () => "<tr><td><br></td><td><br></td><td><br></td></tr>").join("");
+function insertEditorTable(rowCount: number, columnCount: number) {
+  const cells = Array.from({ length: columnCount }, () => "<td><br></td>").join("");
+  const rows = Array.from({ length: rowCount }, () => `<tr>${cells}</tr>`).join("");
   execEditorCommand("insertHTML", `<table><tbody>${rows}</tbody></table><p><br></p>`);
+}
+
+function closestEditorTable() {
+  const selection = window.getSelection();
+  if (!selection || selection.rangeCount === 0) return null;
+
+  const node = selection.getRangeAt(0).startContainer;
+  const element = node.nodeType === Node.ELEMENT_NODE ? (node as Element) : node.parentElement;
+  return element?.closest("table") as HTMLTableElement | null;
+}
+
+function addTableRow() {
+  const table = closestEditorTable();
+  const referenceRow = table?.rows[0];
+  if (!table || !referenceRow) return false;
+
+  const row = table.insertRow(-1);
+  for (let index = 0; index < referenceRow.cells.length; index += 1) {
+    row.insertCell(-1).innerHTML = "<br>";
+  }
+  return true;
+}
+
+function addTableColumn() {
+  const table = closestEditorTable();
+  if (!table) return false;
+
+  for (const row of Array.from(table.rows)) {
+    row.insertCell(-1).innerHTML = "<br>";
+  }
+  return true;
+}
+
+function deleteCurrentTable() {
+  const table = closestEditorTable();
+  if (!table) return false;
+
+  table.remove();
+  return true;
 }
 
 function blockTextBeforeCursor() {
@@ -293,8 +336,11 @@ function App() {
   const [newItemStatusId, setNewItemStatusId] = useState(defaultStatus.id);
   const [newLabelName, setNewLabelName] = useState("");
   const [newSubtaskTitle, setNewSubtaskTitle] = useState("");
+  const [tablePickerOpen, setTablePickerOpen] = useState(false);
+  const [tablePickerSize, setTablePickerSize] = useState({ rows: 3, columns: 3 });
   const saveTimer = useRef<number | null>(null);
   const editorRef = useRef<HTMLDivElement | null>(null);
+  const tableToolRef = useRef<HTMLDivElement | null>(null);
 
   const selectedItem = useMemo(() => items.find((item) => item.id === selectedItemId) ?? null, [items, selectedItemId]);
   const categoryOptions = useMemo(() => categories.map(({ id, name, color }) => ({ id, name, color })), [categories]);
@@ -320,6 +366,15 @@ function App() {
       setCategories(state.categories ?? [defaultCategory]);
       setStatuses(state.statuses ?? [defaultStatus]);
     });
+  }, []);
+
+  useEffect(() => {
+    function onPointerDown(event: PointerEvent) {
+      if (!tableToolRef.current?.contains(event.target as Node)) setTablePickerOpen(false);
+    }
+
+    document.addEventListener("pointerdown", onPointerDown);
+    return () => document.removeEventListener("pointerdown", onPointerDown);
   }, []);
 
   useEffect(() => {
@@ -692,7 +747,6 @@ function App() {
                         ["insertUnorderedList", <List aria-hidden="true" />],
                         ["insertOrderedList", <ListOrdered aria-hidden="true" />],
                         ["formatBlock", <Quote aria-hidden="true" />, "<blockquote>"],
-                        ["insertTable", <Table aria-hidden="true" />],
                         ["removeFormat", <Eraser aria-hidden="true" />]
                       ].map(([command, icon, value]) => (
                         <button
@@ -700,17 +754,83 @@ function App() {
                           type="button"
                           onClick={() => {
                             editorRef.current?.focus();
-                            if (command === "insertTable") {
-                              insertEditorTable();
-                            } else {
-                              execEditorCommand(command as string, value as string | undefined);
-                            }
+                            execEditorCommand(command as string, value as string | undefined);
                             scheduleContentSave();
                           }}
                         >
                           {icon as ReactNode}
                         </button>
                       ))}
+                      <div className="table-tool" ref={tableToolRef}>
+                        <button
+                          type="button"
+                          aria-label="Insert table"
+                          aria-expanded={tablePickerOpen}
+                          onClick={() => setTablePickerOpen((current) => !current)}
+                        >
+                          <Table aria-hidden="true" />
+                        </button>
+                        {tablePickerOpen ? (
+                          <div className="table-picker" role="dialog" aria-label="Table size">
+                            <div className="table-picker-grid">
+                              {Array.from({ length: 6 }, (_, rowIndex) =>
+                                Array.from({ length: 6 }, (_, columnIndex) => {
+                                  const rows = rowIndex + 1;
+                                  const columns = columnIndex + 1;
+                                  const active = rows <= tablePickerSize.rows && columns <= tablePickerSize.columns;
+
+                                  return (
+                                    <button
+                                      key={`${rows}-${columns}`}
+                                      type="button"
+                                      className={active ? "active" : ""}
+                                      aria-label={`${rows} by ${columns} table`}
+                                      onMouseEnter={() => setTablePickerSize({ rows, columns })}
+                                      onClick={() => {
+                                        editorRef.current?.focus();
+                                        insertEditorTable(rows, columns);
+                                        setTablePickerOpen(false);
+                                        scheduleContentSave();
+                                      }}
+                                    />
+                                  );
+                                })
+                              )}
+                            </div>
+                            <span>{tablePickerSize.rows} x {tablePickerSize.columns}</span>
+                          </div>
+                        ) : null}
+                      </div>
+                      <button
+                        type="button"
+                        aria-label="Add table row"
+                        onClick={() => {
+                          editorRef.current?.focus();
+                          if (addTableRow()) scheduleContentSave();
+                        }}
+                      >
+                        <Rows3 aria-hidden="true" />
+                      </button>
+                      <button
+                        type="button"
+                        aria-label="Add table column"
+                        onClick={() => {
+                          editorRef.current?.focus();
+                          if (addTableColumn()) scheduleContentSave();
+                        }}
+                      >
+                        <Columns3 aria-hidden="true" />
+                      </button>
+                      <button
+                        type="button"
+                        aria-label="Delete table"
+                        onClick={() => {
+                          editorRef.current?.focus();
+                          if (deleteCurrentTable()) scheduleContentSave();
+                        }}
+                      >
+                        <Table2 aria-hidden="true" />
+                      </button>
                     </div>
                     <div
                       ref={editorRef}
