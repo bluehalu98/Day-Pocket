@@ -12,6 +12,7 @@ declare global {
     id: string;
     name: string;
     color: string;
+    order?: number;
     locked?: boolean;
   };
 

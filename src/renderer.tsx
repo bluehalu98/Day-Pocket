@@ -5,7 +5,9 @@ import React, { FormEvent, KeyboardEvent, MouseEvent, ReactNode, useEffect, useM
 import { createRoot } from "react-dom/client";
 import {
   ArrowLeft,
+  ArrowDown,
   ArrowUpDown,
+  ArrowUp,
   Bold,
   Check,
   ChevronDown,
@@ -37,8 +39,8 @@ type SelectOption = {
   color?: string;
 };
 
-const defaultCategory: Label = { id: "uncategorized", name: "미분류", color: "#64748b", locked: true };
-const defaultStatus: Label = { id: "unset", name: "미지정", color: "#94a3b8", locked: true };
+const defaultCategory: Label = { id: "uncategorized", name: "미분류", color: "#64748b", order: 0, locked: true };
+const defaultStatus: Label = { id: "unset", name: "미지정", color: "#94a3b8", order: 0, locked: true };
 const sortOptions: SelectOption[] = [
   { id: "updated-desc", name: "최근 수정순" },
   { id: "updated-asc", name: "오래된 수정순" },
@@ -108,6 +110,11 @@ function byId(labels: Label[], fallback: Label, id?: string) {
   return labels.find((label) => label.id === id) ?? labels[0] ?? fallback;
 }
 
+function labelOrder(labels: Label[], id?: string) {
+  const index = labels.findIndex((label) => label.id === id);
+  return index === -1 ? Number.MAX_SAFE_INTEGER : index;
+}
+
 function compareItems(first: PocketItem, second: PocketItem, sortKey: SortKey, categories: Label[], statuses: Label[]) {
   const compareText = (a: string, b: string) => a.localeCompare(b, "ko-KR", { sensitivity: "base", numeric: true });
   const dateValue = (value?: string) => (value ? new Date(value).getTime() : 0);
@@ -121,12 +128,9 @@ function compareItems(first: PocketItem, second: PocketItem, sortKey: SortKey, c
     case "title-asc":
       return compareText(first.title, second.title);
     case "category-asc":
-      return compareText(
-        byId(categories, defaultCategory, first.categoryId).name,
-        byId(categories, defaultCategory, second.categoryId).name
-      );
+      return labelOrder(categories, first.categoryId) - labelOrder(categories, second.categoryId);
     case "status-asc":
-      return compareText(byId(statuses, defaultStatus, first.statusId).name, byId(statuses, defaultStatus, second.statusId).name);
+      return labelOrder(statuses, first.statusId) - labelOrder(statuses, second.statusId);
     case "updated-desc":
     default:
       return compareDate(second.updatedAt ?? second.createdAt, first.updatedAt ?? first.createdAt);
@@ -459,17 +463,37 @@ function App() {
 
     if (kind === "category") {
       if (categories.some((category) => category.name === name)) return;
-      const nextCategories = [...categories, { id: crypto.randomUUID(), name, color: randomHexColor(), locked: false }];
+      const nextCategories = [...categories, { id: crypto.randomUUID(), name, color: randomHexColor(), order: categories.length, locked: false }];
       setCategories(nextCategories);
       persist(items, nextCategories, statuses);
     } else {
       if (statuses.some((status) => status.name === name)) return;
-      const nextStatuses = [...statuses, { id: crypto.randomUUID(), name, color: randomHexColor(), locked: false }];
+      const nextStatuses = [...statuses, { id: crypto.randomUUID(), name, color: randomHexColor(), order: statuses.length, locked: false }];
       setStatuses(nextStatuses);
       persist(items, categories, nextStatuses);
     }
 
     setNewLabelName("");
+  }
+
+  function moveLabel(kind: "category" | "status", id: string, direction: -1 | 1) {
+    const labels = kind === "category" ? categories : statuses;
+    const currentIndex = labels.findIndex((label) => label.id === id);
+    if (currentIndex <= 0 || currentIndex >= labels.length || labels[currentIndex]?.locked) return;
+
+    const nextIndex = currentIndex + direction;
+    if (nextIndex <= 0 || nextIndex >= labels.length) return;
+    const nextLabels = [...labels];
+    [nextLabels[currentIndex], nextLabels[nextIndex]] = [nextLabels[nextIndex], nextLabels[currentIndex]];
+    const orderedLabels = nextLabels.map((label, index) => ({ ...label, order: index }));
+
+    if (kind === "category") {
+      setCategories(orderedLabels);
+      persist(items, orderedLabels, statuses);
+    } else {
+      setStatuses(orderedLabels);
+      persist(items, categories, orderedLabels);
+    }
   }
 
   function updateLabelColor(kind: "category" | "status", id: string, color: string) {
@@ -896,6 +920,7 @@ function App() {
           onClose={closeOverlay}
           onSubmit={(event) => addLabel("category", event)}
           onColorChange={(id, color) => updateLabelColor("category", id, color)}
+          onMove={(id, direction) => moveLabel("category", id, direction)}
           onDelete={(id) => deleteLabel("category", id)}
         />
       ) : null}
@@ -910,6 +935,7 @@ function App() {
           onClose={closeOverlay}
           onSubmit={(event) => addLabel("status", event)}
           onColorChange={(id, color) => updateLabelColor("status", id, color)}
+          onMove={(id, direction) => moveLabel("status", id, direction)}
           onDelete={(id) => deleteLabel("status", id)}
         />
       ) : null}
@@ -957,6 +983,7 @@ function LabelManager({
   onClose,
   onSubmit,
   onColorChange,
+  onMove,
   onDelete
 }: {
   eyebrow: string;
@@ -967,6 +994,7 @@ function LabelManager({
   onClose: () => void;
   onSubmit: (event: FormEvent) => void;
   onColorChange: (id: string, color: string) => void;
+  onMove: (id: string, direction: -1 | 1) => void;
   onDelete: (id: string) => void;
 }) {
   return (
@@ -983,9 +1011,31 @@ function LabelManager({
       </form>
 
       <ul className="category-list">
-        {labels.map((label) => (
+        {labels.map((label, index) => (
           <li className="category-row" key={label.id}>
             <span>{label.name}</span>
+            <div className="category-order-controls" aria-label={`${label.name} order`}>
+              <button
+                className="icon-button"
+                type="button"
+                aria-label={`${label.name} move up`}
+                title="위로 이동"
+                disabled={Boolean(label.locked) || index <= 1}
+                onClick={() => onMove(label.id, -1)}
+              >
+                <ArrowUp aria-hidden="true" />
+              </button>
+              <button
+                className="icon-button"
+                type="button"
+                aria-label={`${label.name} move down`}
+                title="아래로 이동"
+                disabled={Boolean(label.locked) || index === labels.length - 1}
+                onClick={() => onMove(label.id, 1)}
+              >
+                <ArrowDown aria-hidden="true" />
+              </button>
+            </div>
             <input
               className="category-color-input"
               type="color"

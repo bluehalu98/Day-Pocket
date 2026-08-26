@@ -837,13 +837,23 @@ h1 {
 
 .category-row {
   display: grid;
-  grid-template-columns: 1fr 44px 34px;
+  grid-template-columns: 1fr auto 44px 34px;
   align-items: center;
   gap: 10px;
   border: 1px solid #2f3746;
   border-radius: 8px;
   padding: 10px;
   background: #141820;
+}
+
+.category-order-controls {
+  display: flex;
+  gap: 2px;
+}
+
+.category-order-controls .icon-button {
+  width: 28px;
+  height: 28px;
 }
 
 .category-row span {

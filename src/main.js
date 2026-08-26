@@ -13,10 +13,16 @@ function getDataPath() {
 function normalizeState(parsed) {
   const defaultCategory = { id: "uncategorized", name: "미분류", color: "#64748b", locked: true };
   const defaultStatus = { id: "unset", name: "미지정", color: "#94a3b8", locked: true };
-  const normalizeLabel = (label, fallbackColor) => ({
-    ...label,
-    color: /^#[0-9a-f]{6}$/i.test(label.color ?? "") ? label.color : fallbackColor
-  });
+  const normalizeLabels = (labels, fallbackColor) => {
+    const normalized = labels.map((label, index) => ({
+      ...label,
+      color: /^#[0-9a-f]{6}$/i.test(label.color ?? "") ? label.color : fallbackColor,
+      order: typeof label.order === "number" ? label.order : index
+    }));
+    return normalized
+      .sort((first, second) => first.order - second.order)
+      .map((label, index) => ({ ...label, order: index }));
+  };
 
   if (Array.isArray(parsed)) {
     return {
@@ -32,10 +38,10 @@ function normalizeState(parsed) {
 
   if (parsed && typeof parsed === "object") {
     const categories = Array.isArray(parsed.categories)
-      ? parsed.categories.map((category) => normalizeLabel(category, defaultCategory.color))
+      ? normalizeLabels(parsed.categories, defaultCategory.color)
       : [];
     const statuses = Array.isArray(parsed.statuses)
-      ? parsed.statuses.map((status) => normalizeLabel(status, defaultStatus.color))
+      ? normalizeLabels(parsed.statuses, defaultStatus.color)
       : [];
     const hasDefault = categories.some((category) => category.id === defaultCategory.id);
     const hasDefaultStatus = statuses.some((status) => status.id === defaultStatus.id);
@@ -48,8 +54,8 @@ function normalizeState(parsed) {
             statusId: item.statusId ?? defaultStatus.id
           }))
         : [],
-      categories: hasDefault ? categories : [defaultCategory, ...categories],
-      statuses: hasDefaultStatus ? statuses : [defaultStatus, ...statuses]
+      categories: hasDefault ? categories : [defaultCategory, ...categories].map((label, index) => ({ ...label, order: index })),
+      statuses: hasDefaultStatus ? statuses : [defaultStatus, ...statuses].map((label, index) => ({ ...label, order: index }))
     };
   }
 
