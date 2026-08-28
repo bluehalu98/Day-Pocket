@@ -156,8 +156,7 @@ function closestEditorTable() {
   return element?.closest("table") as HTMLTableElement | null;
 }
 
-function addTableRow() {
-  const table = closestEditorTable();
+function addTableRow(table = closestEditorTable()) {
   const referenceRow = table?.rows[0];
   if (!table || !referenceRow) return false;
 
@@ -168,8 +167,7 @@ function addTableRow() {
   return true;
 }
 
-function addTableColumn() {
-  const table = closestEditorTable();
+function addTableColumn(table = closestEditorTable()) {
   if (!table) return false;
 
   for (const row of Array.from(table.rows)) {
@@ -178,8 +176,7 @@ function addTableColumn() {
   return true;
 }
 
-function deleteCurrentTable() {
-  const table = closestEditorTable();
+function deleteCurrentTable(table = closestEditorTable()) {
   if (!table) return false;
 
   table.remove();
@@ -345,6 +342,7 @@ function App() {
   const saveTimer = useRef<number | null>(null);
   const editorRef = useRef<HTMLDivElement | null>(null);
   const tableToolRef = useRef<HTMLDivElement | null>(null);
+  const activeTableRef = useRef<HTMLTableElement | null>(null);
 
   const selectedItem = useMemo(() => items.find((item) => item.id === selectedItemId) ?? null, [items, selectedItemId]);
   const categoryOptions = useMemo(() => categories.map(({ id, name, color }) => ({ id, name, color })), [categories]);
@@ -789,6 +787,7 @@ function App() {
                         <button
                           type="button"
                           aria-label="Insert table"
+                          title="표 삽입"
                           aria-expanded={tablePickerOpen}
                           onClick={() => setTablePickerOpen((current) => !current)}
                         >
@@ -828,9 +827,9 @@ function App() {
                       <button
                         type="button"
                         aria-label="Add table row"
+                        title="현재 표에 행 추가"
                         onClick={() => {
-                          editorRef.current?.focus();
-                          if (addTableRow()) scheduleContentSave();
+                          if (addTableRow(activeTableRef.current)) scheduleContentSave();
                         }}
                       >
                         <Rows3 aria-hidden="true" />
@@ -838,9 +837,9 @@ function App() {
                       <button
                         type="button"
                         aria-label="Add table column"
+                        title="현재 표에 열 추가"
                         onClick={() => {
-                          editorRef.current?.focus();
-                          if (addTableColumn()) scheduleContentSave();
+                          if (addTableColumn(activeTableRef.current)) scheduleContentSave();
                         }}
                       >
                         <Columns3 aria-hidden="true" />
@@ -848,9 +847,9 @@ function App() {
                       <button
                         type="button"
                         aria-label="Delete table"
+                        title="현재 표 삭제"
                         onClick={() => {
-                          editorRef.current?.focus();
-                          if (deleteCurrentTable()) scheduleContentSave();
+                          if (deleteCurrentTable(activeTableRef.current)) scheduleContentSave();
                         }}
                       >
                         <Table2 aria-hidden="true" />
@@ -865,6 +864,12 @@ function App() {
                       aria-label="Content"
                       data-placeholder="메모, 진행 상황, 참고 내용을 적어두세요"
                       onKeyDown={handleEditorShortcut}
+                      onKeyUp={() => {
+                        activeTableRef.current = closestEditorTable();
+                      }}
+                      onMouseUp={() => {
+                        activeTableRef.current = closestEditorTable();
+                      }}
                       onInput={scheduleContentSave}
                     />
                   </div>
