@@ -18,6 +18,7 @@ import {
   Italic,
   List,
   ListOrdered,
+  Palette,
   Plus,
   Quote,
   Rows3,
@@ -343,6 +344,7 @@ function App() {
   const editorRef = useRef<HTMLDivElement | null>(null);
   const tableToolRef = useRef<HTMLDivElement | null>(null);
   const activeTableRef = useRef<HTMLTableElement | null>(null);
+  const editorSelectionRef = useRef<Range | null>(null);
 
   const selectedItem = useMemo(() => items.find((item) => item.id === selectedItemId) ?? null, [items, selectedItemId]);
   const categoryOptions = useMemo(() => categories.map(({ id, name, color }) => ({ id, name, color })), [categories]);
@@ -412,6 +414,30 @@ function App() {
       const content = editorRef.current?.innerHTML ?? "";
       updateSelectedItem({ content });
     }, 160);
+  }
+
+  function rememberEditorSelection() {
+    const selection = window.getSelection();
+    if (!selection || selection.rangeCount === 0 || !editorRef.current) return;
+    if (editorRef.current.contains(selection.anchorNode)) {
+      editorSelectionRef.current = selection.getRangeAt(0).cloneRange();
+    }
+  }
+
+  function restoreEditorSelection() {
+    const savedSelection = editorSelectionRef.current;
+    if (!savedSelection) return;
+    const selection = window.getSelection();
+    if (!selection) return;
+    selection.removeAllRanges();
+    selection.addRange(savedSelection);
+  }
+
+  function applyEditorColor(color: string) {
+    editorRef.current?.focus();
+    restoreEditorSelection();
+    execEditorCommand("foreColor", color);
+    scheduleContentSave();
   }
 
   function handleEditorShortcut(event: KeyboardEvent<HTMLDivElement>) {
@@ -774,8 +800,11 @@ function App() {
                         <button
                           key={command as string}
                           type="button"
+                          title={command as string}
+                          onMouseDown={rememberEditorSelection}
                           onClick={() => {
                             editorRef.current?.focus();
+                            restoreEditorSelection();
                             execEditorCommand(command as string, value as string | undefined);
                             scheduleContentSave();
                           }}
@@ -783,6 +812,16 @@ function App() {
                           {icon as ReactNode}
                         </button>
                       ))}
+                      <label className="editor-color-tool" title="글자색">
+                        <Palette aria-hidden="true" />
+                        <input
+                          type="color"
+                          aria-label="글자색"
+                          defaultValue="#f8fafc"
+                          onMouseDown={rememberEditorSelection}
+                          onChange={(event) => applyEditorColor(event.target.value)}
+                        />
+                      </label>
                       <div className="table-tool" ref={tableToolRef}>
                         <button
                           type="button"
@@ -865,9 +904,11 @@ function App() {
                       data-placeholder="메모, 진행 상황, 참고 내용을 적어두세요"
                       onKeyDown={handleEditorShortcut}
                       onKeyUp={() => {
+                        rememberEditorSelection();
                         activeTableRef.current = closestEditorTable();
                       }}
                       onMouseUp={() => {
+                        rememberEditorSelection();
                         activeTableRef.current = closestEditorTable();
                       }}
                       onInput={scheduleContentSave}
