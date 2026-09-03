@@ -31,6 +31,7 @@ function normalizeState(parsed) {
         categoryId: item.categoryId ?? defaultCategory.id,
         statusId: item.statusId ?? defaultStatus.id
       })),
+      memos: [],
       categories: [defaultCategory],
       statuses: [defaultStatus]
     };
@@ -54,12 +55,13 @@ function normalizeState(parsed) {
             statusId: item.statusId ?? defaultStatus.id
           }))
         : [],
+      memos: Array.isArray(parsed.memos) ? parsed.memos : [],
       categories: hasDefault ? categories : [defaultCategory, ...categories].map((label, index) => ({ ...label, order: index })),
       statuses: hasDefaultStatus ? statuses : [defaultStatus, ...statuses].map((label, index) => ({ ...label, order: index }))
     };
   }
 
-  return { items: [], categories: [defaultCategory], statuses: [defaultStatus] };
+  return { items: [], memos: [], categories: [defaultCategory], statuses: [defaultStatus] };
 }
 
 async function readState() {

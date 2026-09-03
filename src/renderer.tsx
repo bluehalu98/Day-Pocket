@@ -37,12 +37,13 @@ import {
   Table2,
   Trash2,
   Underline,
+  StickyNote,
   X
 } from "lucide-react";
 
 type SortKey = "updated-desc" | "updated-asc" | "created-desc" | "title-asc" | "category-asc" | "status-asc";
-type Overlay = "category" | "status" | "item" | null;
-type View = "list" | "detail";
+type Overlay = "category" | "status" | "item" | "memo" | null;
+type View = "list" | "detail" | "memos";
 type SelectOption = {
   id: string;
   name: string;
@@ -92,6 +93,11 @@ function createItem(title: string, categoryId: string, statusId: string): Pocket
     createdAt: now,
     updatedAt: now
   };
+}
+
+function createMemo(title: string): PocketMemo {
+  const now = new Date().toISOString();
+  return { id: crypto.randomUUID(), title, content: "", createdAt: now, updatedAt: now };
 }
 
 function createSubtask(title: string): Subtask {
@@ -262,6 +268,7 @@ function OverlayPanel({
 
 function App() {
   const [items, setItems] = useState<PocketItem[]>([]);
+  const [memos, setMemos] = useState<PocketMemo[]>([]);
   const [categories, setCategories] = useState<Label[]>([defaultCategory]);
   const [statuses, setStatuses] = useState<Label[]>([defaultStatus]);
   const [selectedItemId, setSelectedItemId] = useState<string | null>(null);
@@ -277,12 +284,17 @@ function App() {
   const [newItemStatusId, setNewItemStatusId] = useState(defaultStatus.id);
   const [newLabelName, setNewLabelName] = useState("");
   const [newSubtaskTitle, setNewSubtaskTitle] = useState("");
+  const [selectedMemoId, setSelectedMemoId] = useState<string | null>(null);
   const [tablePickerOpen, setTablePickerOpen] = useState(false);
   const [tablePickerSize, setTablePickerSize] = useState({ rows: 3, columns: 3 });
   const saveTimer = useRef<number | null>(null);
   const tableToolRef = useRef<HTMLDivElement | null>(null);
   const selectedItemIdRef = useRef<string | null>(selectedItemId);
   selectedItemIdRef.current = selectedItemId;
+  const selectedMemoIdRef = useRef<string | null>(selectedMemoId);
+  selectedMemoIdRef.current = selectedMemoId;
+  const currentViewRef = useRef<View>(currentView);
+  currentViewRef.current = currentView;
 
   const editor = useEditor({
     extensions: [
@@ -300,6 +312,7 @@ function App() {
   });
 
   const selectedItem = useMemo(() => items.find((item) => item.id === selectedItemId) ?? null, [items, selectedItemId]);
+  const selectedMemo = useMemo(() => memos.find((memo) => memo.id === selectedMemoId) ?? null, [memos, selectedMemoId]);
   const categoryOptions = useMemo(() => categories.map(({ id, name, color }) => ({ id, name, color })), [categories]);
   const statusOptions = useMemo(() => statuses.map(({ id, name, color }) => ({ id, name, color })), [statuses]);
   const categoryFilterOptions = useMemo(() => [{ id: "all", name: "전체" }, ...categoryOptions], [categoryOptions]);
@@ -320,6 +333,7 @@ function App() {
   useEffect(() => {
     window.dayPocketStore.load().then((state) => {
       setItems(state.items ?? []);
+      setMemos(state.memos ?? []);
       setCategories(state.categories ?? [defaultCategory]);
       setStatuses(state.statuses ?? [defaultStatus]);
     });
@@ -335,20 +349,21 @@ function App() {
   }, []);
 
   useEffect(() => {
-    if (!editor || !selectedItem) return;
-    if (editor.getHTML() !== selectedItem.content) {
-      editor.commands.setContent(selectedItem.content || "", { emitUpdate: false });
+    const content = currentView === "detail" ? selectedItem?.content : memos.find((memo) => memo.id === selectedMemoId)?.content;
+    if (!editor || content === undefined) return;
+    if (editor.getHTML() !== content) {
+      editor.commands.setContent(content || "", { emitUpdate: false });
     }
-  }, [editor, selectedItem?.id]);
+  }, [editor, currentView, selectedItem?.id, selectedMemoId]);
 
-  function persist(nextItems = items, nextCategories = categories, nextStatuses = statuses) {
-    window.dayPocketStore.save({ items: nextItems, categories: nextCategories, statuses: nextStatuses });
+  function persist(nextItems = items, nextCategories = categories, nextStatuses = statuses, nextMemos = memos) {
+    window.dayPocketStore.save({ items: nextItems, memos: nextMemos, categories: nextCategories, statuses: nextStatuses });
   }
 
   function updateItems(updater: (current: PocketItem[]) => PocketItem[]) {
     setItems((current) => {
       const nextItems = updater(current);
-      persist(nextItems, categories, statuses);
+      persist(nextItems, categories, statuses, memos);
       return nextItems;
     });
   }
@@ -369,7 +384,14 @@ function App() {
         const nextItems = current.map((item) =>
           item.id === currentId ? { ...item, content, updatedAt: new Date().toISOString() } : item
         );
-        persist(nextItems, categories, statuses);
+        if (currentViewRef.current === "memos") {
+          const memoId = selectedMemoIdRef.current;
+          const nextMemos = memos.map((memo) => memo.id === memoId ? { ...memo, content, updatedAt: new Date().toISOString() } : memo);
+          setMemos(nextMemos);
+          persist(items, categories, statuses, nextMemos);
+          return current;
+        }
+        persist(nextItems, categories, statuses, memos);
         return nextItems;
       });
     }, 160);
@@ -383,11 +405,42 @@ function App() {
     const item = createItem(title, newItemCategoryId, newItemStatusId);
     const nextItems = [item, ...items];
     setItems(nextItems);
-    persist(nextItems, categories, statuses);
+    persist(nextItems, categories, statuses, memos);
     setNewItemTitle("");
     setNewItemCategoryId(defaultCategory.id);
     setNewItemStatusId(defaultStatus.id);
     setOverlay(null);
+  }
+
+  function submitMemo(event: FormEvent) {
+    event.preventDefault();
+    const title = newItemTitle.trim();
+    if (!title) return;
+
+    const memo = createMemo(title);
+    const nextMemos = [memo, ...memos];
+    setMemos(nextMemos);
+    setSelectedMemoId(memo.id);
+    setCurrentView("memos");
+    persist(items, categories, statuses, nextMemos);
+    setNewItemTitle("");
+    setOverlay(null);
+  }
+
+  function updateSelectedMemo(patch: Partial<PocketMemo>) {
+    const nextMemos = memos.map((memo) =>
+      memo.id === selectedMemoId ? { ...memo, ...patch, updatedAt: new Date().toISOString() } : memo
+    );
+    setMemos(nextMemos);
+    persist(items, categories, statuses, nextMemos);
+  }
+
+  function deleteSelectedMemo() {
+    if (!selectedMemoId) return;
+    const nextMemos = memos.filter((memo) => memo.id !== selectedMemoId);
+    setMemos(nextMemos);
+    setSelectedMemoId(nextMemos[0]?.id ?? null);
+    persist(items, categories, statuses, nextMemos);
   }
 
   function addLabel(kind: "category" | "status", event: FormEvent) {
@@ -399,12 +452,12 @@ function App() {
       if (categories.some((category) => category.name === name)) return;
       const nextCategories = [...categories, { id: crypto.randomUUID(), name, color: randomHexColor(), order: categories.length, locked: false }];
       setCategories(nextCategories);
-      persist(items, nextCategories, statuses);
+      persist(items, nextCategories, statuses, memos);
     } else {
       if (statuses.some((status) => status.name === name)) return;
       const nextStatuses = [...statuses, { id: crypto.randomUUID(), name, color: randomHexColor(), order: statuses.length, locked: false }];
       setStatuses(nextStatuses);
-      persist(items, categories, nextStatuses);
+      persist(items, categories, nextStatuses, memos);
     }
 
     setNewLabelName("");
@@ -423,10 +476,10 @@ function App() {
 
     if (kind === "category") {
       setCategories(orderedLabels);
-      persist(items, orderedLabels, statuses);
+      persist(items, orderedLabels, statuses, memos);
     } else {
       setStatuses(orderedLabels);
-      persist(items, categories, orderedLabels);
+      persist(items, categories, orderedLabels, memos);
     }
   }
 
@@ -434,13 +487,13 @@ function App() {
     if (kind === "category") {
       const nextCategories = categories.map((category) => (category.id === id ? { ...category, color } : category));
       setCategories(nextCategories);
-      persist(items, nextCategories, statuses);
+      persist(items, nextCategories, statuses, memos);
       return;
     }
 
     const nextStatuses = statuses.map((status) => (status.id === id ? { ...status, color } : status));
     setStatuses(nextStatuses);
-    persist(items, categories, nextStatuses);
+    persist(items, categories, nextStatuses, memos);
   }
 
   function deleteLabel(kind: "category" | "status", id: string) {
@@ -452,7 +505,7 @@ function App() {
       setCategories(nextCategories);
       setItems(nextItems);
       if (activeCategoryFilter === id) setActiveCategoryFilter("all");
-      persist(nextItems, nextCategories, statuses);
+      persist(nextItems, nextCategories, statuses, memos);
       return;
     }
 
@@ -461,7 +514,7 @@ function App() {
     setStatuses(nextStatuses);
     setItems(nextItems);
     if (activeStatusFilter === id) setActiveStatusFilter("all");
-    persist(nextItems, categories, nextStatuses);
+    persist(nextItems, categories, nextStatuses, memos);
   }
 
   function toggleExpanded(itemId: string) {
@@ -501,7 +554,7 @@ function App() {
     if (!selectedItem) return;
     const nextItems = items.filter((item) => item.id !== selectedItem.id);
     setItems(nextItems);
-    persist(nextItems, categories, statuses);
+    persist(nextItems, categories, statuses, memos);
     setExpandedItemIds((current) => {
       const nextIds = new Set(current);
       nextIds.delete(selectedItem.id);
@@ -532,6 +585,28 @@ function App() {
           <h1>Day Pocket</h1>
         </div>
         <div className="topbar-actions">
+          <button
+            className={`ghost-button${currentView !== "memos" ? " active" : ""}`}
+            type="button"
+            onClick={() => {
+              setCurrentView(selectedItem ? "detail" : "list");
+              setSelectedMemoId(null);
+            }}
+          >
+            <Check aria-hidden="true" />
+            <span>일감</span>
+          </button>
+          <button
+            className={`ghost-button${currentView === "memos" ? " active" : ""}`}
+            type="button"
+            onClick={() => {
+              setCurrentView("memos");
+              setSelectedMemoId((current) => current ?? memos[0]?.id ?? null);
+            }}
+          >
+            <StickyNote aria-hidden="true" />
+            <span>메모</span>
+          </button>
           <button className="ghost-button" type="button" onClick={() => openLabelOverlay("category")}>
             <Tags aria-hidden="true" />
             <span>분류</span>
@@ -558,7 +633,85 @@ function App() {
       </header>
 
       <section className="workspace">
-        {currentView === "list" ? (
+        {currentView === "memos" ? (
+          <section className="memo-view" aria-label="Memos">
+            <aside className="memo-list-panel">
+              <div className="memo-toolbar">
+                <div className="search-field">
+                  <Search aria-hidden="true" />
+                  <input
+                    type="search"
+                    placeholder="메모 검색"
+                    value={searchQuery}
+                    onChange={(event) => setSearchQuery(event.target.value)}
+                  />
+                </div>
+                <button className="primary-button" type="button" onClick={() => setOverlay("memo")}>
+                  <Plus aria-hidden="true" />
+                  <span>새 메모</span>
+                </button>
+              </div>
+              <ul className="memo-list">
+                {memos
+                  .filter((memo) => `${memo.title} ${stripHtml(memo.content)}`.toLowerCase().includes(searchQuery.trim().toLowerCase()))
+                  .sort((first, second) => new Date(second.updatedAt).getTime() - new Date(first.updatedAt).getTime())
+                  .map((memo) => (
+                    <li key={memo.id}>
+                      <button
+                        className={`memo-list-item${memo.id === selectedMemoId ? " selected" : ""}`}
+                        type="button"
+                        onClick={() => setSelectedMemoId(memo.id)}
+                      >
+                        <strong>{memo.title}</strong>
+                        <span>{stripHtml(memo.content).trim() || "내용 없음"}</span>
+                      </button>
+                    </li>
+                  ))}
+              </ul>
+            </aside>
+            <article className="memo-editor-card">
+              {!selectedMemo ? (
+                <div className="empty-state">
+                  <h2>메모가 없습니다</h2>
+                  <p>새 메모를 만들어 생각과 기록을 자유롭게 남겨보세요.</p>
+                </div>
+              ) : (
+                <>
+                  <div className="detail-header">
+                    <input
+                      className="detail-title-input"
+                      type="text"
+                      aria-label="Memo title"
+                      value={selectedMemo.title}
+                      onChange={(event) => updateSelectedMemo({ title: event.target.value || "제목 없음" })}
+                    />
+                    <button className="danger-button icon-only-button" type="button" aria-label="Delete memo" onClick={deleteSelectedMemo}>
+                      <Trash2 aria-hidden="true" />
+                    </button>
+                  </div>
+                  <section className="field">
+                    <span>내용</span>
+                    <div className="editor-shell">
+                      <div className="editor-toolbar" aria-label="Memo editor toolbar">
+                        <button type="button" title="굵게" onClick={() => editor?.chain().focus().toggleBold().run()}><Bold aria-hidden="true" /></button>
+                        <button type="button" title="기울임" onClick={() => editor?.chain().focus().toggleItalic().run()}><Italic aria-hidden="true" /></button>
+                        <button type="button" title="밑줄" onClick={() => editor?.chain().focus().toggleUnderline().run()}><Underline aria-hidden="true" /></button>
+                        <button type="button" title="목록" onClick={() => editor?.chain().focus().toggleBulletList().run()}><List aria-hidden="true" /></button>
+                        <button type="button" title="번호 목록" onClick={() => editor?.chain().focus().toggleOrderedList().run()}><ListOrdered aria-hidden="true" /></button>
+                        <button type="button" title="인용" onClick={() => editor?.chain().focus().toggleBlockquote().run()}><Quote aria-hidden="true" /></button>
+                        <label className="editor-color-tool" title="글자색">
+                          <Palette aria-hidden="true" />
+                          <input type="color" aria-label="글자색" defaultValue="#f8fafc" onChange={(event) => editor?.chain().focus().setColor(event.target.value).run()} />
+                        </label>
+                      </div>
+                      <EditorContent className="editor" editor={editor} role="textbox" aria-label="Memo content" />
+                    </div>
+                  </section>
+                </>
+              )}
+            </article>
+          </section>
+        ) : currentView === "list" ? (
           <section className="list-view" aria-label="Items">
             <div className="list-toolbar">
               <CustomSelect
@@ -907,6 +1060,24 @@ function App() {
             <label className="field">
               <span>상태</span>
               <CustomSelect ariaLabel="Status" value={newItemStatusId} options={statusOptions} onChange={setNewItemStatusId} />
+            </label>
+            <button type="submit">Add</button>
+          </form>
+        </OverlayPanel>
+      ) : null}
+
+      {overlay === "memo" ? (
+        <OverlayPanel eyebrow="New Memo" title="메모 추가" onClose={closeOverlay}>
+          <form className="item-create-form" onSubmit={submitMemo}>
+            <label className="field">
+              <span>제목</span>
+              <input
+                type="text"
+                placeholder="새 메모"
+                value={newItemTitle}
+                onChange={(event) => setNewItemTitle(event.target.value)}
+                autoFocus
+              />
             </label>
             <button type="submit">Add</button>
           </form>

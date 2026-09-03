@@ -316,6 +316,88 @@ h1 {
   align-items: start;
 }
 
+.memo-view {
+  display: grid;
+  grid-template-columns: 300px minmax(0, 1fr);
+  gap: 10px;
+  min-height: 640px;
+}
+
+.memo-list-panel,
+.memo-editor-card {
+  min-width: 0;
+  border: 1px solid #2b3340;
+  border-radius: 8px;
+  background: rgba(23, 27, 35, 0.9);
+  box-shadow: 0 16px 34px rgba(0, 0, 0, 0.28);
+}
+
+.memo-list-panel {
+  padding: 12px;
+}
+
+.memo-toolbar {
+  display: grid;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.memo-toolbar .primary-button {
+  width: 100%;
+}
+
+.memo-list {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.memo-list-item {
+  display: grid;
+  width: 100%;
+  min-width: 0;
+  gap: 5px;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  padding: 11px;
+  background: transparent;
+  color: #d8dee9;
+  text-align: left;
+}
+
+.memo-list-item:hover,
+.memo-list-item.selected {
+  border-color: #334155;
+  background: #202734;
+}
+
+.memo-list-item strong,
+.memo-list-item span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.memo-list-item strong {
+  color: #f3f4f6;
+}
+
+.memo-list-item span {
+  color: #8f9bad;
+  font-size: 12px;
+}
+
+.memo-editor-card {
+  display: grid;
+  align-content: start;
+  gap: 18px;
+  min-height: 640px;
+  padding: 22px;
+}
+
 .item-card,
 .detail-card,
 .empty-state {
@@ -955,6 +1037,16 @@ h1 {
 
   .item-list {
     grid-template-columns: 1fr;
+  }
+
+  .memo-view {
+    grid-template-columns: 1fr;
+    min-height: auto;
+  }
+
+  .memo-editor-card,
+  .memo-list-panel {
+    min-height: auto;
   }
 
   .workspace,

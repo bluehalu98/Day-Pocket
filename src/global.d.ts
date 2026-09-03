@@ -34,8 +34,17 @@ declare global {
     updatedAt: string;
   };
 
+  type PocketMemo = {
+    id: string;
+    title: string;
+    content: string;
+    createdAt: string;
+    updatedAt: string;
+  };
+
   type AppState = {
     items: PocketItem[];
+    memos: PocketMemo[];
     categories: Label[];
     statuses: Label[];
   };
