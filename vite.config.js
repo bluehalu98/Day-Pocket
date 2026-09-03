@@ -13,6 +13,8 @@ module.exports = defineConfig({
   },
   build: {
     outDir: path.resolve(__dirname, "dist"),
-    emptyOutDir: true
+    emptyOutDir: true,
+    // Tiptap is intentionally bundled with the initial editor view in this local Electron app.
+    chunkSizeWarningLimit: 750
   }
 });
