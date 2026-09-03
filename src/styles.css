@@ -672,9 +672,15 @@ h1 {
   outline: none;
 }
 
-.editor:empty::before {
-  content: attr(data-placeholder);
+.editor .ProseMirror {
+  min-height: 260px;
+  outline: none;
+}
+
+.editor .ProseMirror:empty::before {
+  content: "메모, 진행 상황, 참고 내용을 적어두세요";
   color: #94a3b8;
+  pointer-events: none;
 }
 
 .editor ul {

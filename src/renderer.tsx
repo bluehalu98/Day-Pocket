@@ -1,8 +1,17 @@
 import "pretendard/dist/web/variable/pretendardvariable.css";
 import "./styles.css";
 
-import React, { FormEvent, KeyboardEvent, MouseEvent, ReactNode, useEffect, useMemo, useRef, useState } from "react";
+import React, { FormEvent, MouseEvent, ReactNode, useEffect, useMemo, useRef, useState } from "react";
 import { createRoot } from "react-dom/client";
+import { EditorContent, useEditor } from "@tiptap/react";
+import Color from "@tiptap/extension-color";
+import { Table as TableExtension } from "@tiptap/extension-table";
+import { TableCell } from "@tiptap/extension-table-cell";
+import { TableHeader } from "@tiptap/extension-table-header";
+import { TableRow } from "@tiptap/extension-table-row";
+import { TextStyle } from "@tiptap/extension-text-style";
+import UnderlineExtension from "@tiptap/extension-underline";
+import StarterKit from "@tiptap/starter-kit";
 import {
   ArrowLeft,
   ArrowDown,
@@ -138,76 +147,6 @@ function compareItems(first: PocketItem, second: PocketItem, sortKey: SortKey, c
   }
 }
 
-function execEditorCommand(command: string, value?: string) {
-  document.execCommand(command, false, value ?? undefined);
-}
-
-function insertEditorTable(rowCount: number, columnCount: number) {
-  const cells = Array.from({ length: columnCount }, () => "<td><br></td>").join("");
-  const rows = Array.from({ length: rowCount }, () => `<tr>${cells}</tr>`).join("");
-  execEditorCommand("insertHTML", `<table><tbody>${rows}</tbody></table><p><br></p>`);
-}
-
-function closestEditorTable() {
-  const selection = window.getSelection();
-  if (!selection || selection.rangeCount === 0) return null;
-
-  const node = selection.getRangeAt(0).startContainer;
-  const element = node.nodeType === Node.ELEMENT_NODE ? (node as Element) : node.parentElement;
-  return element?.closest("table") as HTMLTableElement | null;
-}
-
-function addTableRow(table = closestEditorTable()) {
-  const referenceRow = table?.rows[0];
-  if (!table || !referenceRow) return false;
-
-  const row = table.insertRow(-1);
-  for (let index = 0; index < referenceRow.cells.length; index += 1) {
-    row.insertCell(-1).innerHTML = "<br>";
-  }
-  return true;
-}
-
-function addTableColumn(table = closestEditorTable()) {
-  if (!table) return false;
-
-  for (const row of Array.from(table.rows)) {
-    row.insertCell(-1).innerHTML = "<br>";
-  }
-  return true;
-}
-
-function deleteCurrentTable(table = closestEditorTable()) {
-  if (!table) return false;
-
-  table.remove();
-  return true;
-}
-
-function blockTextBeforeCursor() {
-  const selection = window.getSelection();
-  if (!selection || selection.rangeCount === 0) return "";
-
-  const range = selection.getRangeAt(0);
-  const block = range.startContainer.parentElement?.closest("div, p, li");
-  if (!block) return "";
-
-  const beforeRange = range.cloneRange();
-  beforeRange.selectNodeContents(block);
-  beforeRange.setEnd(range.startContainer, range.startOffset);
-  return beforeRange.toString().trim();
-}
-
-function replaceShortcutWithList(command: string, token: string) {
-  const selection = window.getSelection();
-  if (!selection || selection.rangeCount === 0) return;
-
-  const range = selection.getRangeAt(0);
-  range.setStart(range.startContainer, Math.max(0, range.startOffset - token.length));
-  range.deleteContents();
-  execEditorCommand(command);
-}
-
 function CustomSelect({
   value,
   options,
@@ -341,10 +280,24 @@ function App() {
   const [tablePickerOpen, setTablePickerOpen] = useState(false);
   const [tablePickerSize, setTablePickerSize] = useState({ rows: 3, columns: 3 });
   const saveTimer = useRef<number | null>(null);
-  const editorRef = useRef<HTMLDivElement | null>(null);
   const tableToolRef = useRef<HTMLDivElement | null>(null);
-  const activeTableRef = useRef<HTMLTableElement | null>(null);
-  const editorSelectionRef = useRef<Range | null>(null);
+  const selectedItemIdRef = useRef<string | null>(selectedItemId);
+  selectedItemIdRef.current = selectedItemId;
+
+  const editor = useEditor({
+    extensions: [
+      StarterKit,
+      UnderlineExtension,
+      TextStyle,
+      Color.configure({ types: ["textStyle"] }),
+      TableExtension.configure({ resizable: true }),
+      TableRow,
+      TableHeader,
+      TableCell
+    ],
+    content: "",
+    onUpdate: ({ editor: updatedEditor }) => scheduleContentSave(updatedEditor.getHTML())
+  });
 
   const selectedItem = useMemo(() => items.find((item) => item.id === selectedItemId) ?? null, [items, selectedItemId]);
   const categoryOptions = useMemo(() => categories.map(({ id, name, color }) => ({ id, name, color })), [categories]);
@@ -382,11 +335,11 @@ function App() {
   }, []);
 
   useEffect(() => {
-    if (!selectedItem || !editorRef.current) return;
-    if (editorRef.current.innerHTML !== selectedItem.content) {
-      editorRef.current.innerHTML = selectedItem.content;
+    if (!editor || !selectedItem) return;
+    if (editor.getHTML() !== selectedItem.content) {
+      editor.commands.setContent(selectedItem.content || "", { emitUpdate: false });
     }
-  }, [selectedItem?.id, selectedItem?.content, selectedItem]);
+  }, [editor, selectedItem?.id]);
 
   function persist(nextItems = items, nextCategories = categories, nextStatuses = statuses) {
     window.dayPocketStore.save({ items: nextItems, categories: nextCategories, statuses: nextStatuses });
@@ -408,61 +361,18 @@ function App() {
     );
   }
 
-  function scheduleContentSave() {
+  function scheduleContentSave(content = editor?.getHTML() ?? "") {
     if (saveTimer.current) window.clearTimeout(saveTimer.current);
     saveTimer.current = window.setTimeout(() => {
-      const content = editorRef.current?.innerHTML ?? "";
-      updateSelectedItem({ content });
+      const currentId = selectedItemIdRef.current;
+      setItems((current) => {
+        const nextItems = current.map((item) =>
+          item.id === currentId ? { ...item, content, updatedAt: new Date().toISOString() } : item
+        );
+        persist(nextItems, categories, statuses);
+        return nextItems;
+      });
     }, 160);
-  }
-
-  function rememberEditorSelection() {
-    const selection = window.getSelection();
-    if (!selection || selection.rangeCount === 0 || !editorRef.current) return;
-    if (editorRef.current.contains(selection.anchorNode)) {
-      editorSelectionRef.current = selection.getRangeAt(0).cloneRange();
-    }
-  }
-
-  function restoreEditorSelection() {
-    const savedSelection = editorSelectionRef.current;
-    if (!savedSelection) return;
-    const selection = window.getSelection();
-    if (!selection) return;
-    selection.removeAllRanges();
-    selection.addRange(savedSelection);
-  }
-
-  function applyEditorColor(color: string) {
-    editorRef.current?.focus();
-    restoreEditorSelection();
-    execEditorCommand("foreColor", color);
-    scheduleContentSave();
-  }
-
-  function handleEditorShortcut(event: KeyboardEvent<HTMLDivElement>) {
-    if (event.key === "Tab") {
-      event.preventDefault();
-      execEditorCommand(event.shiftKey ? "outdent" : "indent");
-      scheduleContentSave();
-      return;
-    }
-
-    if (event.key !== " ") return;
-
-    const text = blockTextBeforeCursor();
-    if (text === "-") {
-      event.preventDefault();
-      replaceShortcutWithList("insertUnorderedList", "-");
-      scheduleContentSave();
-      return;
-    }
-
-    if (/^\d+\.$/.test(text)) {
-      event.preventDefault();
-      replaceShortcutWithList("insertOrderedList", text);
-      scheduleContentSave();
-    }
   }
 
   function submitItem(event: FormEvent) {
@@ -788,38 +698,38 @@ function App() {
                   <span>내용</span>
                   <div className="editor-shell">
                     <div className="editor-toolbar" aria-label="Editor toolbar">
-                      {[
-                        ["bold", <Bold aria-hidden="true" />],
-                        ["italic", <Italic aria-hidden="true" />],
-                        ["underline", <Underline aria-hidden="true" />],
-                        ["insertUnorderedList", <List aria-hidden="true" />],
-                        ["insertOrderedList", <ListOrdered aria-hidden="true" />],
-                        ["formatBlock", <Quote aria-hidden="true" />, "<blockquote>"],
-                        ["removeFormat", <Eraser aria-hidden="true" />]
-                      ].map(([command, icon, value]) => (
-                        <button
-                          key={command as string}
-                          type="button"
-                          title={command as string}
-                          onMouseDown={rememberEditorSelection}
-                          onClick={() => {
-                            editorRef.current?.focus();
-                            restoreEditorSelection();
-                            execEditorCommand(command as string, value as string | undefined);
-                            scheduleContentSave();
-                          }}
-                        >
-                          {icon as ReactNode}
-                        </button>
-                      ))}
+                      <button type="button" title="굵게" onClick={() => editor?.chain().focus().toggleBold().run()}>
+                        <Bold aria-hidden="true" />
+                      </button>
+                      <button type="button" title="기울임" onClick={() => editor?.chain().focus().toggleItalic().run()}>
+                        <Italic aria-hidden="true" />
+                      </button>
+                      <button type="button" title="밑줄" onClick={() => editor?.chain().focus().toggleUnderline().run()}>
+                        <Underline aria-hidden="true" />
+                      </button>
+                      <button type="button" title="목록" onClick={() => editor?.chain().focus().toggleBulletList().run()}>
+                        <List aria-hidden="true" />
+                      </button>
+                      <button type="button" title="번호 목록" onClick={() => editor?.chain().focus().toggleOrderedList().run()}>
+                        <ListOrdered aria-hidden="true" />
+                      </button>
+                      <button type="button" title="인용" onClick={() => editor?.chain().focus().toggleBlockquote().run()}>
+                        <Quote aria-hidden="true" />
+                      </button>
+                      <button
+                        type="button"
+                        title="서식 지우기"
+                        onClick={() => editor?.chain().focus().clearNodes().unsetAllMarks().run()}
+                      >
+                        <Eraser aria-hidden="true" />
+                      </button>
                       <label className="editor-color-tool" title="글자색">
                         <Palette aria-hidden="true" />
                         <input
                           type="color"
                           aria-label="글자색"
                           defaultValue="#f8fafc"
-                          onMouseDown={rememberEditorSelection}
-                          onChange={(event) => applyEditorColor(event.target.value)}
+                          onChange={(event) => editor?.chain().focus().setColor(event.target.value).run()}
                         />
                       </label>
                       <div className="table-tool" ref={tableToolRef}>
@@ -849,10 +759,8 @@ function App() {
                                       aria-label={`${rows} by ${columns} table`}
                                       onMouseEnter={() => setTablePickerSize({ rows, columns })}
                                       onClick={() => {
-                                        editorRef.current?.focus();
-                                        insertEditorTable(rows, columns);
+                                        editor?.chain().focus().insertTable({ rows, cols: columns, withHeaderRow: false }).run();
                                         setTablePickerOpen(false);
-                                        scheduleContentSave();
                                       }}
                                     />
                                   );
@@ -868,7 +776,7 @@ function App() {
                         aria-label="Add table row"
                         title="현재 표에 행 추가"
                         onClick={() => {
-                          if (addTableRow(activeTableRef.current)) scheduleContentSave();
+                          editor?.chain().focus().addRowAfter().run();
                         }}
                       >
                         <Rows3 aria-hidden="true" />
@@ -878,7 +786,7 @@ function App() {
                         aria-label="Add table column"
                         title="현재 표에 열 추가"
                         onClick={() => {
-                          if (addTableColumn(activeTableRef.current)) scheduleContentSave();
+                          editor?.chain().focus().addColumnAfter().run();
                         }}
                       >
                         <Columns3 aria-hidden="true" />
@@ -888,30 +796,18 @@ function App() {
                         aria-label="Delete table"
                         title="현재 표 삭제"
                         onClick={() => {
-                          if (deleteCurrentTable(activeTableRef.current)) scheduleContentSave();
+                          editor?.chain().focus().deleteTable().run();
                         }}
                       >
                         <Table2 aria-hidden="true" />
                       </button>
                     </div>
-                    <div
-                      ref={editorRef}
+                    <EditorContent
                       className="editor"
-                      contentEditable
-                      suppressContentEditableWarning
+                      editor={editor}
                       role="textbox"
                       aria-label="Content"
                       data-placeholder="메모, 진행 상황, 참고 내용을 적어두세요"
-                      onKeyDown={handleEditorShortcut}
-                      onKeyUp={() => {
-                        rememberEditorSelection();
-                        activeTableRef.current = closestEditorTable();
-                      }}
-                      onMouseUp={() => {
-                        rememberEditorSelection();
-                        activeTableRef.current = closestEditorTable();
-                      }}
-                      onInput={scheduleContentSave}
                     />
                   </div>
                 </section>
