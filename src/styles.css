@@ -82,6 +82,20 @@ h1 {
   gap: 10px;
 }
 
+.view-switcher {
+  display: flex;
+  gap: 4px;
+  border: 1px solid #2f3746;
+  border-radius: 10px;
+  padding: 3px;
+  background: #141820;
+}
+
+.view-switcher .ghost-button {
+  border-color: transparent;
+  background: transparent;
+}
+
 .ghost-button {
   display: inline-flex;
   align-items: center;
@@ -98,6 +112,13 @@ h1 {
 .ghost-button:hover {
   border-color: #60a5fa;
   background: #202734;
+}
+
+.ghost-button.active,
+.view-switcher .ghost-button.active {
+  border-color: #3b82f6;
+  background: rgba(59, 130, 246, 0.18);
+  color: #f3f4f6;
 }
 
 .ghost-button svg {

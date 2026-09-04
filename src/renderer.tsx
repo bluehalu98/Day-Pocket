@@ -585,36 +585,46 @@ function App() {
           <h1>Day Pocket</h1>
         </div>
         <div className="topbar-actions">
-          <button
-            className={`ghost-button${currentView !== "memos" ? " active" : ""}`}
-            type="button"
-            onClick={() => {
-              setCurrentView(selectedItem ? "detail" : "list");
-              setSelectedMemoId(null);
-            }}
-          >
-            <Check aria-hidden="true" />
-            <span>일감</span>
-          </button>
-          <button
-            className={`ghost-button${currentView === "memos" ? " active" : ""}`}
-            type="button"
-            onClick={() => {
-              setCurrentView("memos");
-              setSelectedMemoId((current) => current ?? memos[0]?.id ?? null);
-            }}
-          >
-            <StickyNote aria-hidden="true" />
-            <span>메모</span>
-          </button>
-          <button className="ghost-button" type="button" onClick={() => openLabelOverlay("category")}>
-            <Tags aria-hidden="true" />
-            <span>분류</span>
-          </button>
-          <button className="ghost-button" type="button" onClick={() => openLabelOverlay("status")}>
-            <CircleDot aria-hidden="true" />
-            <span>상태</span>
-          </button>
+          <div className="view-switcher" role="tablist" aria-label="Workspace type">
+            <button
+              className={`ghost-button${currentView !== "memos" ? " active" : ""}`}
+              type="button"
+              role="tab"
+              aria-selected={currentView !== "memos"}
+              onClick={() => {
+                setCurrentView(selectedItem ? "detail" : "list");
+                setSelectedMemoId(null);
+              }}
+            >
+              <Check aria-hidden="true" />
+              <span>일감</span>
+            </button>
+            <button
+              className={`ghost-button${currentView === "memos" ? " active" : ""}`}
+              type="button"
+              role="tab"
+              aria-selected={currentView === "memos"}
+              onClick={() => {
+                setCurrentView("memos");
+                setSelectedMemoId((current) => current ?? memos[0]?.id ?? null);
+              }}
+            >
+              <StickyNote aria-hidden="true" />
+              <span>메모</span>
+            </button>
+          </div>
+          {currentView !== "memos" ? (
+            <>
+              <button className="ghost-button" type="button" onClick={() => openLabelOverlay("category")}>
+                <Tags aria-hidden="true" />
+                <span>분류</span>
+              </button>
+              <button className="ghost-button" type="button" onClick={() => openLabelOverlay("status")}>
+                <CircleDot aria-hidden="true" />
+                <span>상태</span>
+              </button>
+            </>
+          ) : null}
           {currentView === "detail" ? (
             <button
               className="ghost-button"
@@ -628,7 +638,9 @@ function App() {
               <span>Back</span>
             </button>
           ) : null}
-          <div className="counter">{visibleItems.length}/{items.length} items</div>
+          <div className="counter">
+            {currentView === "memos" ? `메모 ${memos.length}개` : `일감 ${visibleItems.length}/${items.length}`}
+          </div>
         </div>
       </header>
 
