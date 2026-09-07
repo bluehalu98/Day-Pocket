@@ -934,6 +934,61 @@ h1 {
   box-shadow: 0 24px 80px rgba(0, 0, 0, 0.46);
 }
 
+.confirm-dialog {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  align-items: start;
+  gap: 12px;
+}
+
+.confirm-dialog h2 {
+  color: #f3f4f6;
+  font-size: 21px;
+}
+
+.confirm-dialog-icon {
+  display: grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  border-radius: 8px;
+  background: rgba(248, 113, 113, 0.12);
+  color: #fca5a5;
+}
+
+.confirm-dialog-icon svg {
+  width: 20px;
+  height: 20px;
+}
+
+.confirm-dialog-message {
+  margin-top: 8px;
+  color: #a8b3c5;
+  line-height: 1.5;
+}
+
+.confirm-dialog-actions {
+  grid-column: 1 / -1;
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.danger-confirm-button {
+  height: 40px;
+  border: 0;
+  border-radius: 8px;
+  padding: 0 16px;
+  background: #b91c1c;
+  color: #fff1f2;
+  font-weight: 850;
+}
+
+.danger-confirm-button:hover {
+  background: #dc2626;
+}
+
 .overlay-header {
   display: flex;
   align-items: flex-start;

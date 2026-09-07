@@ -36,6 +36,7 @@ import {
   Table,
   Table2,
   Trash2,
+  AlertTriangle,
   Underline,
   StickyNote,
   X
@@ -44,6 +45,11 @@ import {
 type SortKey = "updated-desc" | "updated-asc" | "created-desc" | "title-asc" | "category-asc" | "status-asc";
 type Overlay = "category" | "status" | "item" | "memo" | null;
 type View = "list" | "detail" | "memos";
+type ConfirmDialogState = {
+  title: string;
+  message: string;
+  onConfirm: () => void;
+} | null;
 type SelectOption = {
   id: string;
   name: string;
@@ -266,6 +272,33 @@ function OverlayPanel({
   );
 }
 
+function ConfirmDialog({
+  dialog,
+  onClose
+}: {
+  dialog: NonNullable<ConfirmDialogState>;
+  onClose: () => void;
+}) {
+  return (
+    <div className="overlay" role="alertdialog" aria-modal="true" aria-labelledby="confirm-title" onMouseDown={onClose}>
+      <section className="overlay-panel confirm-dialog" onMouseDown={(event) => event.stopPropagation()}>
+        <div className="confirm-dialog-icon" aria-hidden="true">
+          <AlertTriangle />
+        </div>
+        <div>
+          <p className="eyebrow">Confirm Delete</p>
+          <h2 id="confirm-title">{dialog.title}</h2>
+          <p className="confirm-dialog-message">{dialog.message}</p>
+        </div>
+        <div className="confirm-dialog-actions">
+          <button className="ghost-button" type="button" onClick={onClose}>취소</button>
+          <button className="danger-confirm-button" type="button" onClick={dialog.onConfirm}>삭제</button>
+        </div>
+      </section>
+    </div>
+  );
+}
+
 function App() {
   const [items, setItems] = useState<PocketItem[]>([]);
   const [memos, setMemos] = useState<PocketMemo[]>([]);
@@ -279,6 +312,7 @@ function App() {
   const [searchQuery, setSearchQuery] = useState("");
   const [expandedItemIds, setExpandedItemIds] = useState<Set<string>>(new Set());
   const [overlay, setOverlay] = useState<Overlay>(null);
+  const [confirmDialog, setConfirmDialog] = useState<ConfirmDialogState>(null);
   const [newItemTitle, setNewItemTitle] = useState("");
   const [newItemCategoryId, setNewItemCategoryId] = useState(defaultCategory.id);
   const [newItemStatusId, setNewItemStatusId] = useState(defaultStatus.id);
@@ -435,12 +469,24 @@ function App() {
     persist(items, categories, statuses, nextMemos);
   }
 
-  function deleteSelectedMemo() {
+  function removeSelectedMemo() {
     if (!selectedMemoId) return;
     const nextMemos = memos.filter((memo) => memo.id !== selectedMemoId);
     setMemos(nextMemos);
     setSelectedMemoId(nextMemos[0]?.id ?? null);
     persist(items, categories, statuses, nextMemos);
+  }
+
+  function deleteSelectedMemo() {
+    if (!selectedMemo) return;
+    setConfirmDialog({
+      title: "메모를 삭제할까요?",
+      message: `“${selectedMemo.title}” 메모가 영구적으로 삭제됩니다.`,
+      onConfirm: () => {
+        removeSelectedMemo();
+        setConfirmDialog(null);
+      }
+    });
   }
 
   function addLabel(kind: "category" | "status", event: FormEvent) {
@@ -496,7 +542,7 @@ function App() {
     persist(items, categories, nextStatuses, memos);
   }
 
-  function deleteLabel(kind: "category" | "status", id: string) {
+  function removeLabel(kind: "category" | "status", id: string) {
     if (kind === "category") {
       const nextCategories = categories.filter((category) => category.id !== id);
       const nextItems = items.map((item) =>
@@ -515,6 +561,20 @@ function App() {
     setItems(nextItems);
     if (activeStatusFilter === id) setActiveStatusFilter("all");
     persist(nextItems, categories, nextStatuses, memos);
+  }
+
+  function deleteLabel(kind: "category" | "status", id: string) {
+    const labels = kind === "category" ? categories : statuses;
+    const label = labels.find((currentLabel) => currentLabel.id === id);
+    if (!label || label.locked) return;
+    setConfirmDialog({
+      title: `${kind === "category" ? "분류" : "상태"}를 삭제할까요?`,
+      message: `“${label.name}” 항목을 삭제합니다. 연결된 일감은 미지정 값으로 변경됩니다.`,
+      onConfirm: () => {
+        removeLabel(kind, id);
+        setConfirmDialog(null);
+      }
+    });
   }
 
   function toggleExpanded(itemId: string) {
@@ -545,12 +605,25 @@ function App() {
     });
   }
 
-  function deleteSubtask(subtaskId: string) {
+  function removeSubtask(subtaskId: string) {
     if (!selectedItem) return;
     updateSelectedItem({ subtasks: selectedItem.subtasks.filter((subtask) => subtask.id !== subtaskId) });
   }
 
-  function deleteSelectedItem() {
+  function deleteSubtask(subtaskId: string) {
+    const subtask = selectedItem?.subtasks.find((currentSubtask) => currentSubtask.id === subtaskId);
+    if (!subtask) return;
+    setConfirmDialog({
+      title: "하위 일감을 삭제할까요?",
+      message: `“${subtask.title}” 하위 일감이 삭제됩니다.`,
+      onConfirm: () => {
+        removeSubtask(subtaskId);
+        setConfirmDialog(null);
+      }
+    });
+  }
+
+  function removeSelectedItem() {
     if (!selectedItem) return;
     const nextItems = items.filter((item) => item.id !== selectedItem.id);
     setItems(nextItems);
@@ -562,6 +635,18 @@ function App() {
     });
     setSelectedItemId(null);
     setCurrentView("list");
+  }
+
+  function deleteSelectedItem() {
+    if (!selectedItem) return;
+    setConfirmDialog({
+      title: "일감을 삭제할까요?",
+      message: `“${selectedItem.title}” 일감과 하위 일감이 함께 삭제됩니다.`,
+      onConfirm: () => {
+        removeSelectedItem();
+        setConfirmDialog(null);
+      }
+    });
   }
 
   function closeOverlay() {
@@ -1095,6 +1180,7 @@ function App() {
           </form>
         </OverlayPanel>
       ) : null}
+      {confirmDialog ? <ConfirmDialog dialog={confirmDialog} onClose={() => setConfirmDialog(null)} /> : null}
     </main>
   );
 }
