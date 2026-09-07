@@ -337,6 +337,51 @@ h1 {
   color: #60a5fa;
 }
 
+.multi-select-menu {
+  min-width: 220px;
+}
+
+.multi-select-option {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  min-height: 36px;
+  border: 0;
+  border-radius: 7px;
+  padding: 8px;
+  background: transparent;
+  color: #d8dee9;
+  text-align: left;
+}
+
+.multi-select-option:hover {
+  background: #202734;
+  color: #f3f4f6;
+}
+
+.filter-checkbox {
+  display: inline-grid;
+  place-items: center;
+  flex: 0 0 auto;
+  width: 16px;
+  height: 16px;
+  border: 1px solid #526176;
+  border-radius: 4px;
+  color: #07111f;
+}
+
+.filter-checkbox.checked {
+  border-color: #60a5fa;
+  background: #60a5fa;
+}
+
+.filter-checkbox svg {
+  width: 12px;
+  height: 12px;
+  stroke-width: 3;
+}
+
 .item-list,
 .subtask-list,
 .nested-subtasks {

@@ -227,6 +227,84 @@ function CustomSelect({
   );
 }
 
+function MultiSelectFilter({
+  options,
+  selectedIds,
+  ariaLabel,
+  icon,
+  onChange
+}: {
+  options: SelectOption[];
+  selectedIds: string[];
+  ariaLabel: string;
+  icon?: ReactNode;
+  onChange: (ids: string[]) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const rootRef = useRef<HTMLDivElement | null>(null);
+  const allSelected = selectedIds.length === 0;
+  const selectedOptions = options.filter((option) => selectedIds.includes(option.id));
+  const valueLabel = allSelected ? "전체" : selectedOptions.length === 1 ? selectedOptions[0].name : `${selectedOptions.length}개 선택`;
+
+  useEffect(() => {
+    function onPointerDown(event: PointerEvent) {
+      if (!rootRef.current?.contains(event.target as Node)) setOpen(false);
+    }
+    document.addEventListener("pointerdown", onPointerDown);
+    return () => document.removeEventListener("pointerdown", onPointerDown);
+  }, []);
+
+  function toggleValue(id: string) {
+    const allIds = options.map((option) => option.id);
+    const nextIds = allSelected
+      ? allIds.filter((optionId) => optionId !== id)
+      : selectedIds.includes(id)
+        ? selectedIds.filter((optionId) => optionId !== id)
+        : [...selectedIds, id];
+    onChange(nextIds.length === allIds.length ? [] : nextIds);
+  }
+
+  return (
+    <div className="custom-select multi-select" ref={rootRef}>
+      <button
+        type="button"
+        className="custom-select-trigger"
+        aria-label={ariaLabel}
+        aria-expanded={open}
+        onClick={() => setOpen((current) => !current)}
+      >
+        {icon ? <span className="select-leading-icon">{icon}</span> : null}
+        <span className="select-value">{valueLabel}</span>
+        <ChevronDown aria-hidden="true" />
+      </button>
+      {open ? (
+        <div className="custom-select-menu multi-select-menu" role="group" aria-label={ariaLabel}>
+          <button type="button" className="multi-select-option" aria-pressed={allSelected} onClick={() => onChange([])}>
+            <span className={`filter-checkbox${allSelected ? " checked" : ""}`} aria-hidden="true">{allSelected ? <Check /> : null}</span>
+            <span>전체</span>
+          </button>
+          {options.map((option) => {
+            const checked = allSelected || selectedIds.includes(option.id);
+            return (
+              <button
+                key={option.id}
+                type="button"
+                className="multi-select-option"
+                aria-pressed={checked}
+                onClick={() => toggleValue(option.id)}
+              >
+                <span className={`filter-checkbox${checked ? " checked" : ""}`} aria-hidden="true">{checked ? <Check /> : null}</span>
+                {option.color ? <span className="select-swatch" style={{ "--select-color": option.color } as React.CSSProperties} /> : null}
+                <span>{option.name}</span>
+              </button>
+            );
+          })}
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
 function LabelTag({ label, dashed = false }: { label: Label; dashed?: boolean }) {
   return (
     <span
@@ -308,8 +386,8 @@ function App() {
   const [statuses, setStatuses] = useState<Label[]>([defaultStatus]);
   const [selectedItemId, setSelectedItemId] = useState<string | null>(null);
   const [currentView, setCurrentView] = useState<View>("list");
-  const [activeCategoryFilter, setActiveCategoryFilter] = useState("all");
-  const [activeStatusFilter, setActiveStatusFilter] = useState("all");
+  const [activeCategoryFilters, setActiveCategoryFilters] = useState<string[]>([]);
+  const [activeStatusFilters, setActiveStatusFilters] = useState<string[]>([]);
   const [activeSort, setActiveSort] = useState<SortKey>("updated-desc");
   const [searchQuery, setSearchQuery] = useState("");
   const [expandedItemIds, setExpandedItemIds] = useState<Set<string>>(new Set());
@@ -351,20 +429,18 @@ function App() {
   const selectedMemo = useMemo(() => memos.find((memo) => memo.id === selectedMemoId) ?? null, [memos, selectedMemoId]);
   const categoryOptions = useMemo(() => categories.map(({ id, name, color }) => ({ id, name, color })), [categories]);
   const statusOptions = useMemo(() => statuses.map(({ id, name, color }) => ({ id, name, color })), [statuses]);
-  const categoryFilterOptions = useMemo(() => [{ id: "all", name: "전체" }, ...categoryOptions], [categoryOptions]);
-  const statusFilterOptions = useMemo(() => [{ id: "all", name: "전체" }, ...statusOptions], [statusOptions]);
 
   const visibleItems = useMemo(() => {
     const query = searchQuery.trim().toLowerCase();
     const filteredItems = items.filter((item) => {
-      const categoryMatches = activeCategoryFilter === "all" || item.categoryId === activeCategoryFilter;
-      const statusMatches = activeStatusFilter === "all" || item.statusId === activeStatusFilter;
+      const categoryMatches = activeCategoryFilters.length === 0 || activeCategoryFilters.includes(item.categoryId);
+      const statusMatches = activeStatusFilters.length === 0 || activeStatusFilters.includes(item.statusId);
       const searchTarget = `${item.title} ${stripHtml(item.content)}`.toLowerCase();
       return categoryMatches && statusMatches && (!query || searchTarget.includes(query));
     });
 
     return [...filteredItems].sort((first, second) => compareItems(first, second, activeSort, categories, statuses));
-  }, [activeCategoryFilter, activeSort, activeStatusFilter, categories, items, searchQuery, statuses]);
+  }, [activeCategoryFilters, activeSort, activeStatusFilters, categories, items, searchQuery, statuses]);
 
   useEffect(() => {
     window.dayPocketStore.load().then((state) => {
@@ -552,7 +628,7 @@ function App() {
       );
       setCategories(nextCategories);
       setItems(nextItems);
-      if (activeCategoryFilter === id) setActiveCategoryFilter("all");
+      setActiveCategoryFilters((current) => current.filter((filterId) => filterId !== id));
       persist(nextItems, nextCategories, statuses, memos);
       return;
     }
@@ -561,7 +637,7 @@ function App() {
     const nextItems = items.map((item) => (item.statusId === id ? { ...item, statusId: defaultStatus.id } : item));
     setStatuses(nextStatuses);
     setItems(nextItems);
-    if (activeStatusFilter === id) setActiveStatusFilter("all");
+    setActiveStatusFilters((current) => current.filter((filterId) => filterId !== id));
     persist(nextItems, categories, nextStatuses, memos);
   }
 
@@ -813,19 +889,19 @@ function App() {
         ) : currentView === "list" ? (
           <section className="list-view" aria-label="Items">
             <div className="list-toolbar">
-              <CustomSelect
+              <MultiSelectFilter
                 ariaLabel="Filter by category"
-                value={activeCategoryFilter}
-                options={categoryFilterOptions}
+                selectedIds={activeCategoryFilters}
+                options={categoryOptions}
                 icon={<Filter aria-hidden="true" />}
-                onChange={setActiveCategoryFilter}
+                onChange={setActiveCategoryFilters}
               />
-              <CustomSelect
+              <MultiSelectFilter
                 ariaLabel="Filter by status"
-                value={activeStatusFilter}
-                options={statusFilterOptions}
+                selectedIds={activeStatusFilters}
+                options={statusOptions}
                 icon={<CircleDot aria-hidden="true" />}
-                onChange={setActiveStatusFilter}
+                onChange={setActiveStatusFilters}
               />
               <CustomSelect
                 ariaLabel="Sort items"
