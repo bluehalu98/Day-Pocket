@@ -247,15 +247,17 @@ function OverlayPanel({
   eyebrow,
   title,
   onClose,
+  closeOnBackdrop = true,
   children
 }: {
   eyebrow: string;
   title: string;
   onClose: () => void;
+  closeOnBackdrop?: boolean;
   children: ReactNode;
 }) {
   return (
-    <div className="overlay" role="dialog" aria-modal="true" onMouseDown={onClose}>
+    <div className="overlay" role="dialog" aria-modal="true" onMouseDown={closeOnBackdrop ? onClose : undefined}>
       <section className="overlay-panel" onMouseDown={(event) => event.stopPropagation()}>
         <div className="overlay-header">
           <div>
@@ -1133,7 +1135,7 @@ function App() {
       ) : null}
 
       {overlay === "item" ? (
-        <OverlayPanel eyebrow="New Item" title="일감 추가" onClose={closeOverlay}>
+        <OverlayPanel eyebrow="New Item" title="일감 추가" onClose={closeOverlay} closeOnBackdrop={false}>
           <form className="item-create-form" onSubmit={submitItem}>
             <label className="field">
               <span>제목</span>
