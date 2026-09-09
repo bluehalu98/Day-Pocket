@@ -297,8 +297,9 @@ h1 {
   box-shadow: 0 18px 48px rgba(0, 0, 0, 0.44);
 }
 
-.item-create-form .custom-select,
-.item-create-form .custom-select-menu {
+.item-create-form .compact-field,
+.item-create-form .compact-field .custom-select,
+.item-create-form .compact-field .custom-select-menu {
   width: 100%;
   min-width: 0;
 }
