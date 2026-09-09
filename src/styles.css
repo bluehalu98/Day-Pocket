@@ -297,11 +297,16 @@ h1 {
   box-shadow: 0 18px 48px rgba(0, 0, 0, 0.44);
 }
 
-.item-create-form .compact-field,
-.item-create-form .compact-field .custom-select,
-.item-create-form .compact-field .custom-select-menu {
+.item-create-form .field .custom-select,
+.item-create-form .field .custom-select-menu {
   width: 100%;
   min-width: 0;
+}
+
+.item-create-form .custom-select-menu {
+  right: auto;
+  left: 0;
+  text-align: left;
 }
 
 .custom-select-option {

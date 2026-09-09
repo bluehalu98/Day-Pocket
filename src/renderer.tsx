@@ -1223,7 +1223,7 @@ function App() {
                 autoFocus
               />
             </label>
-            <label className="field compact-field">
+            <label className="field">
               <span>분류</span>
               <CustomSelect
                 ariaLabel="Category"
@@ -1232,7 +1232,7 @@ function App() {
                 onChange={setNewItemCategoryId}
               />
             </label>
-            <label className="field compact-field">
+            <label className="field">
               <span>상태</span>
               <CustomSelect ariaLabel="Status" value={newItemStatusId} options={statusOptions} onChange={setNewItemStatusId} />
             </label>
